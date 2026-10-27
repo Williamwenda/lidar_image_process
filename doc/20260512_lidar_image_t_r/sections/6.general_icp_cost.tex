@@ -1,0 +1,387 @@
+\newpage
+\section{Generalized and Multi-Channel ICP}
+
+\subsection{Source and target point clouds}
+Let the source and target point clouds be defined as
+\begin{equation}
+\mathcal{P} = \{ \mathbf{p}_i \in \mathbb{R}^3 \}_{i=1}^{N_p},
+\qquad
+\mathcal{Q} = \{ \mathbf{q}_j \in \mathbb{R}^3 \}_{j=1}^{N_q}.
+\end{equation}
+Given a rigid-body transformation
+\(\mathbf{T} = \{\mathbf{R}, \mathbf{t}\} \in \mathrm{SE}(3)\),
+each source point is transformed as
+\begin{equation}
+\hat{\mathbf{p}}_i = \mathbf{R}\mathbf{p}_i + \mathbf{t}.
+\end{equation}
+
+For each transformed source point \(\hat{\mathbf{p}}_i\), a correspondence
+\(\mathbf{q}_i \in \mathcal{Q}\) is obtained via nearest-neighbor search, and the
+point residual is defined as
+\begin{equation}
+\mathbf{r}_i = \hat{\mathbf{p}}_i - \mathbf{q}_i = (\mathbf{R}\mathbf{p}_i + \mathbf{t}) - \mathbf{q}_i.
+\end{equation}
+
+\begin{equation}
+\mathbf{r}_i =  (\mathbf{R}\mathbf{p}_i + \mathbf{t}) - \mathbf{q}_i.
+\end{equation}
+
+
+\subsection{Local neighborhood and covariance estimation}
+For each target correspondence \(\mathbf{q}_i\), we construct a local neighborhood
+\(\mathcal{K}_i = \{\mathbf{x}_j\}_{j=1}^{k}\) using \(k\)-nearest neighbors.
+The centroid of the neighborhood is
+\begin{equation}
+\bm{\mu}_i = \frac{1}{k} \sum_{j=1}^{k} \mathbf{x}_j .
+\end{equation}
+
+The local covariance matrix is computed as
+\begin{equation}
+\mathbf{C}_i
+=
+\frac{1}{k}
+\sum_{j=1}^{k}
+(\mathbf{x}_j - \bm{\mu}_i)
+(\mathbf{x}_j - \bm{\mu}_i)^\top .
+\end{equation}
+
+
+
+\subsection{PCA and local orthonormal frame}
+We perform eigen-decomposition of the covariance matrix:
+\begin{equation}
+\mathbf{C}_i
+=
+\lambda_1 \mathbf{t}_1 \mathbf{t}_1^\top
++
+\lambda_2 \mathbf{t}_2 \mathbf{t}_2^\top
++
+\lambda_3 \mathbf{n}\mathbf{n}^\top,
+\qquad
+\lambda_1 \ge \lambda_2 \ge \lambda_3 \ge 0 .
+\end{equation}
+
+Here, \(\mathbf{n}\) denotes the surface normal (least-variance direction), while
+\(\mathbf{t}_1\) and \(\mathbf{t}_2\) span the local tangent plane. The set
+\(\{\mathbf{n}, \mathbf{t}_1, \mathbf{t}_2\}\) forms an orthonormal basis of
+\(\mathbb{R}^3\).
+
+
+
+
+We indicate the orthonormal matrix as
+\begin{equation}
+\mathbf{Q} = [ \mathbf{n}\;\; \mathbf{t}_1\;\; \mathbf{t}_2 ] \in \mathbb{R}^{3\times 3}.
+\end{equation}
+Since the columns of \(\mathbf{Q}\) are orthonormal, we have
+\begin{equation}
+\begin{split}
+    \mathbf{Q}^\top \mathbf{Q} &= \mathbf{I} \\
+    \mathbf{Q}^\top &= \mathbf{Q}^{-1}
+\end{split}
+\end{equation}
+
+Then, we have 
+\begin{equation}
+\mathbf{Q}\mathbf{Q}^\top = \mathbf{Q}\mathbf{Q}^{-1} = \mathbf{I}.
+\end{equation}
+
+\begin{equation}
+\mathbf{Q}\mathbf{Q}^\top  = \begin{bmatrix}
+\mathbf{n} & \mathbf{t}_1 & \mathbf{t}_2
+\end{bmatrix}\begin{bmatrix}
+\mathbf{n}^\top \\ \mathbf{t}_1^\top \\ \mathbf{t}_2^\top
+\end{bmatrix} = 
+\mathbf{I} =
+\mathbf{n}\mathbf{n}^\top
++
+\mathbf{t}_1\mathbf{t}_1^\top
++
+\mathbf{t}_2\mathbf{t}_2^\top,
+\end{equation}
+
+
+\subsection{Geometry-adaptive directional weights}
+
+The eigenvalues \(\lambda_i\) characterize the local geometric spread of the neighborhood.
+From a probabilistic perspective, the point residual \(\mathbf{r}_i\) is naturally weighted
+by the inverse of the local covariance estimated via PCA. We therefore start from the
+regularized inverse-covariance metric
+\begin{equation}
+\mathbf{W}_i \propto (\mathbf{C}_i + \epsilon \mathbf{I})^{-1},
+\end{equation}
+where \(\epsilon > 0\) is a scale-aware regularization parameter that prevents numerical
+instability in degenerate configurations.
+
+Using the eigen-decomposition
+\begin{equation}
+\mathbf{C}_i
+=
+\lambda_1 \mathbf{t}_1 \mathbf{t}_1^\top
++
+\lambda_2 \mathbf{t}_2 \mathbf{t}_2^\top
++
+\lambda_3 \mathbf{n}\mathbf{n}^\top,
+\qquad
+\lambda_1 \ge \lambda_2 \ge \lambda_3 \ge 0,
+\end{equation}
+and exploiting the orthonormality of the local frame
+\(\{\mathbf{n}, \mathbf{t}_1, \mathbf{t}_2\}\),
+the inverse can be computed in closed form as
+\begin{equation}
+(\mathbf{C}_i + \epsilon \mathbf{I})^{-1}
+=
+\frac{1}{\lambda_1 + \epsilon}\mathbf{t}_1\mathbf{t}_1^\top
++
+\frac{1}{\lambda_2 + \epsilon}\mathbf{t}_2\mathbf{t}_2^\top
++
+\frac{1}{\lambda_3 + \epsilon}\mathbf{n}\mathbf{n}^\top .
+\end{equation}
+
+To preserve the classical point-to-plane behavior, we normalize the metric such that the
+normal direction has unit weight. Multiplying the above expression by
+\((\lambda_3 + \epsilon)\) yields
+\begin{equation}
+\mathbf{W}_i
+=
+\mathbf{n}\mathbf{n}^\top
++
+\frac{\lambda_3 + \epsilon}{\lambda_1 + \epsilon}\mathbf{t}_1\mathbf{t}_1^\top
++
+\frac{\lambda_3 + \epsilon}{\lambda_2 + \epsilon}\mathbf{t}_2\mathbf{t}_2^\top .
+\end{equation}
+
+Defining the geometry-adaptive tangential weights
+\begin{equation}
+w_1 = \frac{\lambda_3 + \epsilon}{\lambda_1 + \epsilon},
+\qquad
+w_2 = \frac{\lambda_3 + \epsilon}{\lambda_2 + \epsilon},
+\end{equation}
+the residual-space weight matrix can be compactly written as
+\begin{equation}
+\begin{split}
+    \mathbf{W}_i &= \mathbf{n}\mathbf{n}^\top + \frac{\lambda_3 + \epsilon}{\lambda_1 + \epsilon}\mathbf{t}_1\mathbf{t}_1^\top + \frac{\lambda_3 + \epsilon}{\lambda_2 + \epsilon}\mathbf{t}_2\mathbf{t}_2^\top \\
+     &= \mathbf{n}\mathbf{n}^\top + w_1\mathbf{t}_1\mathbf{t}_1^\top + w_2\mathbf{t}_2\mathbf{t}_2^\top
+\end{split}
+\end{equation}
+
+
+\textcolor{blue}{
+This formulation naturally recovers classical ICP variants:
+}
+\begin{itemize}
+  \item \textbf{Point-like:}
+  \(\lambda_1 \approx \lambda_2 \approx \lambda_3
+  \Rightarrow \mathbf{W}_i \approx \mathbf{I}\) (point-to-point).
+  \item \textbf{Line-like:}
+  \(\lambda_1 \gg \lambda_2 \approx \lambda_3
+  \Rightarrow \mathbf{W}_i \approx \mathbf{n}\mathbf{n}^\top + \mathbf{t}_2\mathbf{t}_2^\top = (\mathbf{I} - \mathbf{t}_1\mathbf{t}_1^\top)\)  (point-to-line).
+  \item \textbf{Planar-like:}
+  \(\lambda_1 \approx \lambda_2 \gg \lambda_3
+  \Rightarrow \mathbf{W}_i \approx \mathbf{n}\mathbf{n}^\top\) (point-to-plane).
+\end{itemize}
+
+
+
+\subsection{ICP objective}
+
+For correspondence \(i\), the point-to-point residual is defined as
+\begin{equation}
+\mathbf{r}_i = \mathbf{R}\mathbf{p}_i + \mathbf{t} -
+\mathbf{q}_i
+\in \mathbb{R}^3 .
+\end{equation}
+
+Linearizing the residual around the current estimate using a pose increment
+\(\delta\bm{\xi} \in \mathfrak{se}(3)\) gives
+\begin{equation}
+\mathbf{r}_i \approx
+\bar{\mathbf{r}}_i + \mathbf{J}_i \delta\bm{\xi},
+\end{equation}
+where \(\mathbf{J}_i \in \mathbb{R}^{3 \times 6}\) is the corresponding Jacobian.
+
+The weighted least-squares problem is then formulated as
+\begin{equation}
+\min_{\delta\bm{\xi}}
+\sum_i
+\left(
+\mathbf{r}_i + \mathbf{J}_i \delta\bm{\xi}
+\right)^\top
+\mathbf{W}_i
+\left(
+\mathbf{r}_i + \mathbf{J}_i \delta\bm{\xi}
+\right).
+\end{equation}
+
+% Expanding the quadratic form and discarding constant terms yields
+% \begin{equation}
+% \sum_i
+% \left(
+% \delta\bm{\xi}^\top \mathbf{J}_i^\top \mathbf{W}_i \mathbf{J}_i \delta\bm{\xi}
+% +
+% 2\delta\bm{\xi}^\top \mathbf{J}_i^\top \mathbf{W}_i \mathbf{r}_i
+% \right).
+% \end{equation}
+
+Setting the gradient with respect to \(\delta\bm{\xi}\) to zero leads to the
+Gauss--Newton normal equations
+\begin{equation}
+\begin{split}
+\sum_i \mathbf{J}_i^\top \mathbf{W}_i \mathbf{J}_i 
+\delta\bm{\xi} &= -\sum_i \mathbf{J}_i^\top \mathbf{W}_i \mathbf{r}_i \\
+\sum_i \mathbf{J}_i^\top \textcolor{blue}{(\mathbf{n}\mathbf{n}^\top + w_1\mathbf{t}_1\mathbf{t}_1^\top + w_2\mathbf{t}_2\mathbf{t}_2^\top)_i} \mathbf{J}_i 
+\delta\bm{\xi} &= -\sum_i \mathbf{J}_i^\top \textcolor{blue}{(    \mathbf{n}\mathbf{n}^\top + w_1\mathbf{t}_1\mathbf{t}_1^\top + w_2\mathbf{t}_2\mathbf{t}_2^\top)_i} \mathbf{r}_i
+\end{split}
+\end{equation}
+
+Defining the approximate Hessian and gradient vector as
+\begin{equation}
+\mathbf{H}
+=
+\sum_i
+\mathbf{J}_i^\top \mathbf{W}_i \mathbf{J}_i,
+\qquad
+\mathbf{b}
+=
+-
+\sum_i
+\mathbf{J}_i^\top \mathbf{W}_i \mathbf{r}_i,
+\end{equation}
+the update step is obtained by solving
+\begin{equation}
+\mathbf{H}\delta\bm{\xi} = \mathbf{b}.
+\end{equation}
+
+\subsection{Extension to Generalized ICP}
+
+Our ICP formulation can be naturally combined into the Generalized ICP~\citep{segal2009generalized} framework. For general ICP, we consider the target and source point cloud as: 
+\begin{equation}
+    \mathbf{p}_i \sim \mathcal{N}(\bar{\mathbf{p}}_i, \mathbf{C}_i^{s}), ~~~~~\mathbf{q}_i \sim \mathcal{N}(\bar{\mathbf{q}}_i, \mathbf{C}_i^{t}).
+\end{equation}
+Since we compute the residual as 
+\begin{equation}
+    \mathbf{r}_i = \mathbf{q}_i - \mathbf{D}\mathbf{T}\mathbf{p}_i^{*}, ~~~~~\mathbf{p}_i^{*} = \begin{bmatrix}
+        \mathbf{p}_i \\
+        1
+    \end{bmatrix}, \mathbf{D} = \begin{bmatrix}
+        1 &0 &0 & 0 \\
+        0 &1 &0 & 0 \\
+        0 &0 &1 & 0 \\
+    \end{bmatrix},
+\end{equation}
+we define $\mathbf{D}\mathbf{T} = \tilde{\mathbf{T}}$ for short and have the probabilistic formulation of the residual as 
+\begin{equation}
+    \mathbf{r}_i \sim \mathcal{N} (\mathbf{q}_i - \tilde{\mathbf{T}}\mathbf{p}_i^{*}, \mathbf{C}_i^{t} + \tilde{\mathbf{T}}\mathbf{C}_i^{s} \tilde{\mathbf{T}}^{\top}).
+\end{equation}
+For the optimal transformation $\tilde{\mathbf{T}}^{\star}$, we have 
+\begin{equation}
+    \mathbf{r}_i \sim \mathcal{N} (\mathbf{0}, \mathbf{C}_i^{t} + \tilde{\mathbf{T}}^{\star}\mathbf{C}_i^{s} (\tilde{\mathbf{T}}^{\star})^{\top}).
+\end{equation}
+Within the Generalized ICP formulation, we have the ICP objective function as 
+\begin{equation}
+    \mathcal{J} = \argmin_{\mathbf{T}} \sum_{i} \mathbf{r}_i \left(\mathbf{C}_i^{t} + \tilde{\mathbf{T}}\mathbf{C}_i^{s} \tilde{\mathbf{T}}^{\top}\right)^{-1}\mathbf{r}_i^{\top}
+\end{equation}
+
+In the original Generalized-ICP paper, the authors further inject local plenary assumption and proposed the famous plane-to-plane ICP. In our case, we are able to bring in the geometric-dependent weight as the information matrix, inverse of the covariance matrix, $\left(\mathbf{C}_i^{s}\right)^{-1}$ and $\left(\mathbf{C}_i^{t}\right)^{-1}$
+\begin{equation}
+    \begin{split}
+        \left(\mathbf{C}_i^{s}\right)^{-1} & =  (\mathbf{n}\mathbf{n}^\top + w_1\mathbf{t}_1\mathbf{t}_1^\top + w_2\mathbf{t}_2\mathbf{t}_2^\top)^{s}\\
+        \left(\mathbf{C}_i^{t}\right)^{-1} & = (\mathbf{n}\mathbf{n}^\top + w_1\mathbf{t}_1\mathbf{t}_1^\top + w_2\mathbf{t}_2\mathbf{t}_2^\top)^{t}.
+    \end{split}
+\end{equation}
+
+This is a more reasonable and general geometrical ICP formulation, without the local flat assumption. 
+
+\newpage
+\subsection{Combine Geometric ICP with Multi-Channel Information}
+We incorporate multi-channel information into the ICP formulation. We refer the default ICP which penalizes the geometric residual as geometric ICP. Following ~\citep{servos2017multi}, we treat intensity and color as point descriptors. Our geometric ICP weight is formulated as follows:
+\begin{equation}
+    \begin{split}
+        \mathbf{W}_i &= \mathbf{n}\mathbf{n}^\top + w_1\mathbf{t}_1\mathbf{t}_1^\top + w_2\mathbf{t}_2\mathbf{t}_2^\top \\
+        &= \mathbf{n}\mathbf{n}^\top + \begin{bmatrix}
+            \mathbf{t}_1  & \mathbf{t}_2
+        \end{bmatrix}\begin{bmatrix}
+            \omega_1  & 0 \\
+            0  &\omega_2
+        \end{bmatrix} \begin{bmatrix}
+            \mathbf{t}_1^{\top}  \\ \mathbf{t}_2^{\top}         
+        \end{bmatrix} \\
+        &= \mathbf{n}\mathbf{n}^\top + \mathcal{T} \mathbf{W}_g \mathcal{T}^{\top}
+    \end{split}
+\end{equation}
+
+We compute the covariance of point descriptors in the local tangent space. First, each neighboing point is projected onto the tangent space. 
+\begin{equation}
+    \mathbf{z}_j^p = \begin{bmatrix}
+        \mathbf{t}_1^{\top}\mathbf{p}_j^{p} \\
+        \mathbf{t}_2^{\top}\mathbf{p}_j^{p}
+    \end{bmatrix}
+\end{equation}
+
+We define descriptor-based weights as
+\begin{equation}
+    \tau_j = \exp{\left(-\frac{1}{2}(\mathbf{z}_j^{d} - \mathbf{q}^{d})^{\top}\bm{\Sigma}_{D}^{-1}(\mathbf{z}_j^{d} - \mathbf{q}^{d})\right)} 
+\end{equation}
+where $\bm{\Sigma}_{D}$ denotes the descriptor covariance.
+
+
+The weighted mean $\bm{\mu}^{p}$ and the corresponding covariance $\bm{\Sigma}_d$ in tangent space are
+\begin{equation}
+    \begin{split}
+        \bm{\mu}^{p}  &= \frac{1}{\sum \tau_j} \sum_j \tau_j \mathbf{z}_j^{p} \\
+        \bm{\Sigma}_d &= \frac{1}{\sum \tau_j} \sum_j \tau_j (\mathbf{z}_j^{p}-\mu^{p})(\mathbf{z}_j^{p}-\mu^{p})^{\top}  
+    \end{split}
+\end{equation}
+
+The covariance of the projected local neighbors is computed as 
+\begin{equation}
+            \bm{\Sigma}_{w} = Cov(\mathbf{z}_j^{p}) \in \mathbb{R}^{2\times2}.
+\end{equation}
+To normalize descriptor covariance w.r.t. geometric variation, we compute
+\begin{equation}
+    \Omega = \Sigma_w^{-\frac{1}{2}} \Sigma_d \Sigma_w^{-\frac{1}{2}}
+\end{equation}
+
+
+
+Then the descriptor weight matrix is computed as
+\begin{equation}
+    \mathbf{M}_t = \left(\Omega + \delta \mathbf{I}\right)^{-1} \in \mathbb{R}^{2\times 2},
+\end{equation}
+where $\delta$ is a small regularization constant.
+
+We combine descriptor information with geometric ICP and have
+\textcolor{blue}{
+\begin{equation}
+    \mathbf{W}_i = \mathbf{n}\mathbf{n}^{\top} + \mathcal{T}\left((1-\alpha) \mathbf{W}_g + \alpha\kappa \mathbf{M}_t\right) \mathcal{T}^{\top}.
+\end{equation}
+}
+The parameter $\kappa$ is designed to balance the scale of geometric and descriptor residuals and $\alpha \in [0,1]$ interpolates between pure geometric ICP to descriptor-enhanced ICP in local plenary space. 
+
+We design parameter $\alpha$ as
+\begin{equation}
+    \alpha = \frac{\lambda_2 - \lambda_3}{\lambda_2 +\epsilon} = 1 - \omega_2,
+\end{equation}
+where $\lambda_i$ are the eigenvalues of the local geometric covariance matrix. 
+
+Since we have used the eigenvalues of local covariance matrix to analyze the geometric property of local neighbors, we might need to consider normalize the eigenvalues to fit different point density. The normalization of the eigenvalues can be computed as 
+\begin{equation}
+    \tilde{\lambda}_1 = \frac{\lambda_1}{\lambda_1 + \lambda_2 +\lambda_3}, ~~~~~~\tilde{\lambda}_2 = \frac{\lambda_2}{\lambda_1 + \lambda_2 +\lambda_3}, ~~~~~~\tilde{\lambda}_3 = \frac{\lambda_3}{\lambda_1 + \lambda_2 +\lambda_3}.
+\end{equation}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,218 @@
+\section{Degeneracy-Aware Complementary Fusion}
+In this section, we recap the degeneracy detection for LiDAR geometric localization and derive how a complementary sensing modality, the LiDAR intensity image in our case, can be introduced only in the geometrically degenerate directions.
+
+\subsection{Recap of LiDAR Localization Degeneracy Detection}
+We formulate the weighted least-squares problem using the LiDAR geometric features as
+\begin{equation}
+\begin{split}
+    &\min_{\delta\mathbf{x}} \left\|\mathbf{r}_g - \mathbf{J}_g\delta\mathbf{x}\right\|_{\mathbf{W}_g}^2 \\
+    =& \min_{\delta\mathbf{x}} \left(\mathbf{r}_g - \mathbf{J}_g\delta\mathbf{x}\right)^{\top}\mathbf{W}_g\left(\mathbf{r}_g - \mathbf{J}_g\delta\mathbf{x}\right) \\
+    =& \min_{\delta\mathbf{x}} \underbrace{\mathbf{r}_g^{\top}\mathbf{W}_g\mathbf{r}_g}_{\text{const. w.r.t. } \delta\mathbf{x}} - 2\mathbf{r}_g^{\top}\mathbf{W}_g\mathbf{J}_g\delta\mathbf{x} + \delta\mathbf{x}^{\top}\mathbf{J}_g^{\top}\mathbf{W}_g\mathbf{J}_g\delta\mathbf{x} \\
+    =& \min_{\delta\mathbf{x}} \delta\mathbf{x}^{\top}\mathbf{J}_g^{\top}\mathbf{W}_g\mathbf{J}_g\delta\mathbf{x} - 2\mathbf{r}_g^{\top}\mathbf{W}_g\mathbf{J}_g\delta\mathbf{x}.
+\end{split}
+\end{equation}
+Define the Hessian matrix and the gradient vector as
+\begin{equation}
+    \mathbf{H}_g = \mathbf{J}_g^{\top}\mathbf{W}_g\mathbf{J}_g, \qquad
+    \mathbf{b}_g^{\top} = \mathbf{r}_g^{\top}\mathbf{W}_g\mathbf{J}_g \;\rightarrow\; \mathbf{b}_g = \mathbf{J}_g^{\top}\mathbf{W}_g\mathbf{r}_g.
+\end{equation}
+We now have
+\begin{equation}
+    \min_{\delta\mathbf{x}} \delta\mathbf{x}^{\top}\mathbf{H}_g\delta\mathbf{x} - 2\mathbf{b}_g^{\top}\delta\mathbf{x}
+    \quad\Leftrightarrow\quad
+    \min_{\delta\mathbf{x}} \frac{1}{2}\delta\mathbf{x}^{\top}\mathbf{H}_g\delta\mathbf{x} - \mathbf{b}_g^{\top}\delta\mathbf{x}.
+\end{equation}
+Setting the gradient w.r.t.\ $\delta\mathbf{x}$ to zero, we have the one-step update
+\begin{equation}
+    \mathbf{H}_g\delta\mathbf{x} = \mathbf{b}_g.
+\end{equation}
+
+To detect degeneracy, we perform the eigendecomposition of $\mathbf{H}_g$,
+\begin{equation}
+    \mathbf{H}_g = \mathbf{V}\bm{\Lambda}_g\mathbf{V}^{\top}, \qquad
+    \bm{\Lambda}_g = \operatorname{diag}\left(\lambda_1^g, \ldots, \lambda_6^g\right),
+\end{equation}
+with the eigenvalues sorted in descending order. We treat the eigenvalue $\lambda_i^g$ (and its eigenvector $\mathbf{v}_i$) as degenerate if
+\begin{equation}
+    \frac{\lambda_{\max}^g}{\lambda_i^g} \geq \gamma,
+\end{equation}
+where $\gamma$ is a user-defined condition threshold. Assuming the first $m$ directions are well-conditioned, we partition the eigenvectors into
+\begin{equation}
+    \mathbf{V}_c = \left[\mathbf{v}_1, \ldots, \mathbf{v}_m\right], \qquad
+    \mathbf{V}_d = \left[\mathbf{v}_{m+1}, \ldots, \mathbf{v}_6\right].
+\end{equation}
+The degenerate space is
+\begin{equation}
+    \mathcal{D} = \operatorname{span}\left(\mathbf{V}_d\right).
+\end{equation}
+Since the columns of $\mathbf{V}_d$ are orthonormal eigenvectors, $\mathbf{V}_d^{\top}\mathbf{V}_d = \mathbf{I}$. We can project the perturbation into $\mathcal{D}$ with
+\begin{equation}
+    \delta\mathbf{x}_d = \mathbf{V}_d^{\top}\delta\mathbf{x}.
+\end{equation}
+Conversely, for a perturbation lying in $\mathcal{D}$, $\mathbf{V}_d^{\top}\mathbf{V}_d\delta\mathbf{x}_d = \mathbf{V}_d^{\top}\delta\mathbf{x}$, and we have the inverse relationship
+\begin{equation}
+    \delta\mathbf{x} = \mathbf{V}_d\,\delta\mathbf{x}_d.
+\end{equation}
+
+\subsection{Complementary Information in the Degenerate Space}
+We now bring the projection back to the original optimization formulation. If we have a complementary sensing modality, the LiDAR intensity image in our case, we have
+\begin{equation}
+    \min_{\delta\mathbf{x}} \frac{1}{2}\delta\mathbf{x}^{\top}\mathbf{H}_v\delta\mathbf{x} - \mathbf{b}_v^{\top}\delta\mathbf{x}.
+\end{equation}
+Substituting $\delta\mathbf{x} = \mathbf{V}_d\,\delta\mathbf{x}_d$ gives
+\begin{equation}
+    \min_{\delta\mathbf{x}_d} \frac{1}{2}\delta\mathbf{x}_d^{\top}\underbrace{\mathbf{V}_d^{\top}\mathbf{H}_v\mathbf{V}_d}_{\mathbf{H}_{v,d}}\delta\mathbf{x}_d - \underbrace{\mathbf{b}_v^{\top}\mathbf{V}_d}_{\mathbf{b}_{v,d}^{\top}}\delta\mathbf{x}_d.
+\end{equation}
+The projected Hessian $\mathbf{H}_{v,d}$ quantifies \textbf{how much information the complementary sensor contributes to the geometric degenerate space $\mathcal{D}$} of the main sensor. Setting the gradient w.r.t.\ $\delta\mathbf{x}_d$ to zero, we have
+\begin{equation}
+    \mathbf{H}_{v,d}\delta\mathbf{x}_d = \mathbf{b}_{v,d}, \qquad \text{with} \quad
+    \begin{cases}
+        \mathbf{H}_{v,d} = \mathbf{V}_d^{\top}\mathbf{H}_v\mathbf{V}_d, \\
+        \mathbf{b}_{v,d} = \mathbf{V}_d^{\top}\mathbf{b}_v.
+    \end{cases}
+\end{equation}
+
+\subsection{Joint Optimization Restricted to the Degenerate Space}
+If we consider a joint optimization with both the LiDAR geometry and intensity features, we have
+\begin{equation}
+    \min_{\delta\mathbf{x}} \left\|\mathbf{r}_g - \mathbf{J}_g\delta\mathbf{x}\right\|_{\mathbf{W}_g}^2 + \left\|\mathbf{r}_v - \mathbf{J}_v\delta\mathbf{x}\right\|_{\mathbf{W}_v}^2.
+\end{equation}
+Setting the gradient to zero, we have
+\begin{equation}
+    \mathbf{H}_g\delta\mathbf{x} + \mathbf{H}_v\delta\mathbf{x} = \mathbf{b}_g + \mathbf{b}_v.
+\end{equation}
+If we want the intensity image to contribute only to the geometric degenerate space $\mathcal{D}$, we can instead solve
+\begin{equation}
+    \label{eq:joint_ls}
+    \left(\mathbf{H}_g + \textcolor{blue}{\alpha}\,\mathbf{V}_d\mathbf{V}_d^{\top}\mathbf{H}_v\mathbf{V}_d\mathbf{V}_d^{\top}\right)\delta\mathbf{x} = \mathbf{b}_g + \textcolor{blue}{\alpha}\,\mathbf{V}_d\mathbf{V}_d^{\top}\mathbf{b}_v.
+\end{equation}
+With the projection matrix $\mathbf{P}_d = \mathbf{V}_d\mathbf{V}_d^{\top}$, this is
+\begin{equation}
+    \label{eq:joint_ls_simple}
+    \left(\mathbf{H}_g + \textcolor{blue}{\alpha}\,\mathbf{P}_d\mathbf{H}_v\mathbf{P}_d\right)\delta\mathbf{x} = \mathbf{b}_g + \textcolor{blue}{\alpha}\,\mathbf{P}_d\mathbf{b}_v,
+\end{equation}
+where $\textcolor{blue}{\alpha}$ is a parameter that balances the weights of the LiDAR geometry residuals and the LiDAR intensity feature residuals.
+
+\textbf{Derivation:} 
+\begin{equation}
+    \min_{\delta\mathbf{x}_d} \frac{1}{2}\delta\mathbf{x}_d^{\top}\mathbf{V}_d^{\top}\mathbf{H}_v\mathbf{V}_d\,\delta\mathbf{x}_d - \mathbf{b}_v^{\top}\mathbf{V}_d\,\delta\mathbf{x}_d,
+\end{equation}
+and substituting $\delta\mathbf{x}_d = \mathbf{V}_d^{\top}\delta\mathbf{x}$, we obtain the cost expressed in the full state perturbation
+\begin{equation}
+    \min_{\delta\mathbf{x}} \frac{1}{2}\delta\mathbf{x}^{\top}\underbrace{\mathbf{V}_d\mathbf{V}_d^{\top}\mathbf{H}_v\mathbf{V}_d\mathbf{V}_d^{\top}}_{\mathbf{P}_d\mathbf{H}_v\mathbf{P}_d}\delta\mathbf{x} - \underbrace{\mathbf{b}_v^{\top}\mathbf{V}_d\mathbf{V}_d^{\top}}_{(\mathbf{P}_d\mathbf{b}_v)^{\top}}\delta\mathbf{x}.
+\end{equation}
+Weighting this cost by $\alpha$, adding it to the geometric cost $\frac{1}{2}\delta\mathbf{x}^{\top}\mathbf{H}_g\delta\mathbf{x} - \mathbf{b}_g^{\top}\delta\mathbf{x}$, and setting the gradient to zero (using $\mathbf{P}_d^{\top} = \mathbf{P}_d$) yields the normal equation above.
+
+
+\subsection{Intensity-Image Feature Residual Formulation}
+\label{sec:feat_res_2d}
+We first formulate the residual directly in the 2D intensity-image space and derive its covariance by propagating the measurement uncertainty of both matched features. We denote the LiDAR spherical projection model as $f(\cdot)$. A landmark $\mathbf{p}$ expressed in the sensor frame projects onto the intensity image as
+\begin{equation}
+    \mathbf{y} = f\left(\mathbf{p}\right) = \begin{bmatrix} u \\ v \end{bmatrix},
+\end{equation}
+where $(u, v)$ are the image coordinates, which correspond to the azimuth and elevation angles of the LiDAR beam. Unlike a camera, the LiDAR also provides the range $\rho$ of every intensity-image feature. Throughout this section, we use $i$ to index a feature in the first frame (time $t_1$) and $j$ to index its match in the second frame (time $t_2$).
+
+\subsubsection{3D point covariance of an intensity-image feature}
+\label{sec:feat_point_cov}
+Let $\bm{\Sigma}_{uv,i}$ be the image-space noise covariance of feature $i$ and $\sigma_{\rho,i}^2$ its range noise variance. Stacking the image coordinates and the range gives the full measurement
+\begin{equation}
+    \mathbf{z}_i = \begin{bmatrix} u_i \\ v_i \\ \rho_i \end{bmatrix}, \qquad
+    \bm{\Sigma}_{\mathbf{z}_i} = \begin{bmatrix} \bm{\Sigma}_{uv,i} & \mathbf{0} \\ \mathbf{0}^{\top} & \sigma_{\rho,i}^2 \end{bmatrix}.
+\end{equation}
+The 3D point is recovered by the inverse projection, whose first-order perturbation is
+\begin{equation}
+    \mathbf{p}_i = f^{-1}\left(\mathbf{z}_i\right), \qquad
+    \delta\mathbf{p}_i \approx \mathbf{J}_{f^{-1},\color{orange}{\bm{i}}}\,\delta\mathbf{z}_i, \qquad
+    \mathbf{J}_{f^{-1},\color{orange}{\bm{i}}} = \frac{\partial f^{-1}}{\partial \mathbf{z}_i} \in \mathbb{R}^{3\times 3}.
+\end{equation}
+The covariance of the back-projected 3D point is therefore
+\begin{equation}
+    \label{eq:point_cov}
+    \bm{\Sigma}_{\mathbf{p}_i} = \mathbf{J}_{f^{-1},\color{orange}{\bm{i}}}\,\bm{\Sigma}_{\mathbf{z}_i}\,\mathbf{J}_{f^{-1},\color{orange}{\bm{i}}}^{\top}.
+\end{equation}
+The same expression holds for any feature $j$ in the second frame by replacing the index $i$ with $j$.
+
+\textcolor{blue}{\textbf{Note:} the learnt uncertainty $\bm{\Sigma}_{uv}$ is essentially the uncertainty of the \textbf{azimuth and elevation angles}. After back-projection, it is scaled by the range, so $\bm{\Sigma}_{\mathbf{p}_i}$ grows perpendicular to the beam for distant points, while the uncertainty along the beam is governed by $\sigma_{\rho,i}^2$.}
+
+\subsubsection{Predicted measurement in the second frame}
+Given the relative pose $\{\mathbf{R}_{t_2,t_1}, \mathbf{t}_{t_2}^{t_1,t_2}\}$, feature $i$ is transformed into the second frame as
+\begin{equation}
+    \label{eq:pred_point}
+    \hat{\mathbf{p}}_j = \mathbf{R}_{t_2,t_1}\mathbf{p}_i + \mathbf{t}_{t_2}^{t_1,t_2}, \qquad
+    \bm{\Sigma}_{\hat{\mathbf{p}}_j} = \mathbf{R}_{t_2,t_1}\,\bm{\Sigma}_{\mathbf{p}_i}\mathbf{R}_{t_2,t_1}^{\top}
+    = \mathbf{R}_{t_2,t_1}\mathbf{J}_{f^{-1},\color{orange}{\bm{i}}}\,\bm{\Sigma}_{\mathbf{z}_i}\,\mathbf{J}_{f^{-1},\color{orange}{\bm{i}}}^{\top}\mathbf{R}_{t_2,t_1}^{\top}.
+\end{equation}
+The 2D feature residual compares the observed image coordinates of the match $j$ with the reprojection of $\hat{\mathbf{p}}_j$,
+\begin{equation}
+    \mathbf{r}_{ij} = \mathbf{y}_j - f\left(\hat{\mathbf{p}}_j\right) = \mathbf{y}_j - \hat{\mathbf{y}}_j.
+\end{equation}
+Linearizing the projection,
+\begin{equation}
+    \delta\hat{\mathbf{y}}_j = \mathbf{J}_{f,\color{red}{\bm{j}}}\,\delta\hat{\mathbf{p}}_j, \qquad
+    \mathbf{J}_{f,\color{red}{\bm{j}}} = \frac{\partial f(\hat{\mathbf{p}}_j)}{\partial \hat{\mathbf{p}}_j} \in \mathbb{R}^{2\times 3},
+\end{equation}
+the covariance of the predicted measurement is
+\begin{equation}
+    \bm{\Sigma}_{\hat{\mathbf{y}}_j} = \mathbf{J}_{f,\color{red}{\bm{j}}}\,\bm{\Sigma}_{\hat{\mathbf{p}}_j}\mathbf{J}_{f,\color{red}{\bm{j}}}^{\top}
+    = \mathbf{J}_{f,\color{red}{\bm{j}}}\mathbf{R}_{t_2,t_1}\mathbf{J}_{f^{-1},\color{orange}{\bm{i}}}\,\bm{\Sigma}_{\mathbf{z}_i}\,\mathbf{J}_{f^{-1},\color{orange}{\bm{i}}}^{\top}\mathbf{R}_{t_2,t_1}^{\top}\mathbf{J}_{f,\color{red}{\bm{j}}}^{\top}.
+\end{equation}
+
+\subsubsection{Residual covariance}
+Since $\mathbf{y}_j$ and $\hat{\mathbf{y}}_j$ are independent, the residual covariance is the sum of the two contributions. If the confidence of the feature-correspondence $\bm{\Sigma}_{ij}^{\mathrm{corr}} \in \mathbb{R}^{2\times 2}$ can also be learnt, it enters as an additional independent term,
+\begin{equation}
+    \label{eq:res_cov_2d}
+    \bm{\Sigma}_{\mathbf{r}_{ij}} = \underbrace{\bm{\Sigma}_{uv,j}}_{\text{from learning}} + \mathbf{J}_{f,\color{red}{\bm{j}}}\mathbf{R}_{t_2,t_1}\mathbf{J}_{f^{-1},\color{orange}{\bm{i}}}\,\bm{\Sigma}_{\mathbf{z}_i}\,\mathbf{J}_{f^{-1},\color{orange}{\bm{i}}}^{\top}\mathbf{R}_{t_2,t_1}^{\top}\mathbf{J}_{f,\color{red}{\bm{j}}}^{\top} + \bm{\Sigma}_{ij}^{\mathrm{corr}}.
+\end{equation}
+Without correspondence uncertainty, the last term is simply dropped.
+
+\textcolor{blue}{\textbf{Note:} $\mathbf{J}_{f,j}$ and $\mathbf{J}_{f^{-1},i}$ cancel only when $\mathbf{R} = \mathbf{I}$ and $\mathbf{t} = \mathbf{0}$, i.e., $\mathbf{J}_{f,j}\mathbf{J}_{f^{-1},i} = [\,\mathbf{I}_2 \;\; \mathbf{0}\,]$, which reduces the second term to $\bm{\Sigma}_{uv,i}$. In general, the residual covariance is \textbf{not} simply $\bm{\Sigma}_{uv,j} + \bm{\Sigma}_{uv,i}$.}
+
+\subsubsection{Cost and Hessian}
+The cost of the feature pair $(i,j)$ is the squared Mahalanobis distance
+\begin{equation}
+    \mathcal{J}_{I,ij} = \mathbf{r}_{ij}^{\top}\bm{\Sigma}_{\mathbf{r}_{ij}}^{-1}\mathbf{r}_{ij},
+\end{equation}
+which leads to the normal equation $\mathbf{H}_{I,ij}\,\delta\bm{\xi} = \mathbf{b}_{I,ij}$ with
+\begin{equation}
+    \mathbf{H}_{I,ij} = \mathbf{J}_{\xi,ij}^{\top}\bm{\Sigma}_{\mathbf{r}_{ij}}^{-1}\mathbf{J}_{\xi,ij}, \qquad
+    \mathbf{J}_{\xi,ij} = \frac{\partial \mathbf{r}_{ij}}{\partial \bm{\xi}} = -\mathbf{J}_{f,\color{red}{\bm{j}}}\,\frac{\partial \hat{\mathbf{p}}_j}{\partial \bm{\xi}},
+\end{equation}
+where the Jacobian $\mathbf{J}_{\xi,ij}$ contains the spherical projection Jacobian $\mathbf{J}_{f,j}$.
+
+
+\subsection{Intensity-Image Feature 3D Point-to-Point Residual Formulation}
+\label{sec:feat_res_3d}
+The 2D formulation above uses the range only to back-project the feature in the first frame, while the matched feature in the second frame contributes only its image coordinates. Since the LiDAR measures the range of every pixel, we can also back-project the matched feature $j$ and formulate the residual directly in 3D. In this way, each intensity-image feature becomes a 3D LiDAR point that carries a descriptor, and the descriptor matches define point-to-point correspondences without any nearest-neighbour search.
+
+\subsubsection{Point-to-point residual}
+Using the full measurement $\mathbf{z}_j = [u_j, v_j, \rho_j]^{\top}$ of the matched feature, the point-to-point residual is
+\begin{equation}
+    \tilde{\mathbf{r}}_{ij} = \mathbf{p}_j - \hat{\mathbf{p}}_j = f^{-1}\left(\mathbf{z}_j\right) - \hat{\mathbf{p}}_j,
+\end{equation}
+where $\hat{\mathbf{p}}_j$ is the transformed point of feature $i$ in Equation~\eqref{eq:pred_point}.
+
+\subsubsection{Residual covariance}
+Both terms of $\tilde{\mathbf{r}}_{ij}$ are back-projected intensity-image features, so their covariances follow from Equation~\eqref{eq:point_cov}. For the observed point in the second frame,
+\begin{equation}
+    \bm{\Sigma}_{\mathbf{p}_j} = \mathbf{J}_{f^{-1},\color{red}{\bm{j}}}\,\bm{\Sigma}_{\mathbf{z}_j}\,\mathbf{J}_{f^{-1},\color{red}{\bm{j}}}^{\top}, \qquad
+    \bm{\Sigma}_{\mathbf{z}_j} = \begin{bmatrix} \bm{\Sigma}_{uv,j} & \mathbf{0} \\ \mathbf{0}^{\top} & \sigma_{\rho,j}^2 \end{bmatrix},
+\end{equation}
+and for the predicted point, $\bm{\Sigma}_{\hat{\mathbf{p}}_j}$ is given in Equation~\eqref{eq:pred_point}. Since $\mathbf{p}_j$ and $\hat{\mathbf{p}}_j$ are independent, the residual covariance is
+\begin{equation}
+    \label{eq:res_cov_3d}
+    \bm{\Sigma}_{\tilde{\mathbf{r}}_{ij}} = \mathbf{J}_{f^{-1},\color{red}{\bm{j}}}\,\bm{\Sigma}_{\mathbf{z}_j}\,\mathbf{J}_{f^{-1},\color{red}{\bm{j}}}^{\top} + \mathbf{R}_{t_2,t_1}\mathbf{J}_{f^{-1},\color{orange}{\bm{i}}}\,\bm{\Sigma}_{\mathbf{z}_i}\,\mathbf{J}_{f^{-1},\color{orange}{\bm{i}}}^{\top}\mathbf{R}_{t_2,t_1}^{\top} + \bm{\Sigma}_{ij}^{\mathrm{corr}},
+\end{equation}
+where $\bm{\Sigma}_{ij}^{\mathrm{corr}} \in \mathbb{R}^{3\times 3}$ is the confidence of the feature-correspondence expressed in 3D. Compared with Equation~\eqref{eq:res_cov_2d}, the projection Jacobian $\mathbf{J}_{f,j}$ no longer appears, and the range noise of both features enters the residual covariance.
+
+\subsubsection{Cost and Hessian}
+The cost and Hessian of the feature pair $(i,j)$ are
+\begin{equation}
+    \tilde{\mathcal{J}}_{I,ij} = \tilde{\mathbf{r}}_{ij}^{\top}\bm{\Sigma}_{\tilde{\mathbf{r}}_{ij}}^{-1}\tilde{\mathbf{r}}_{ij}, \qquad
+    \tilde{\mathbf{H}}_{I,ij} = \tilde{\mathbf{J}}_{\xi,ij}^{\top}\bm{\Sigma}_{\tilde{\mathbf{r}}_{ij}}^{-1}\tilde{\mathbf{J}}_{\xi,ij}, \qquad
+    \tilde{\mathbf{J}}_{\xi,ij} = \frac{\partial \tilde{\mathbf{r}}_{ij}}{\partial \bm{\xi}} = -\frac{\partial \hat{\mathbf{p}}_j}{\partial \bm{\xi}}.
+\end{equation}
+The Jacobian is the standard point-transformation Jacobian, as in geometric point-to-point ICP, while the descriptor matching provides the correspondences and $\bm{\Sigma}_{\tilde{\mathbf{r}}_{ij}}$ provides the anisotropic, per-correspondence weighting.
+
+
+\subsection{Discussion}
+Both formulations provide a principled way of fusing the LiDAR geometric measurements and the LiDAR intensity-image features. Because every residual is weighted by a covariance propagated from the raw measurement noise ($\bm{\Sigma}_{uv}$ and $\sigma_{\rho}^2$), the geometric and intensity terms are expressed on a common statistical scale, and we can drop the balancing parameter $\alpha$ in Equation~\eqref{eq:joint_ls} and Equation~\eqref{eq:joint_ls_simple} (i.e., $\alpha=1$). This is possible because both modalities come from the same sensor, so the intensity image shares the LiDAR range and projection model. The formulation therefore applies to LiDAR and LiDAR intensity-image fusion, but not directly to general LiDAR--camera fusion pipelines.

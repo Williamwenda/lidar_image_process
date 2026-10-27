@@ -1,0 +1,116 @@
+\section{Lidar Image Visual Odometry}
+In this section, we summarize the necessary equations for the lidar image-based visual odometry. In particular, we focus on lidar intensity images and range images. 
+
+\subsection{Motion Compensated RANSAC}
+
+We define the inertial frame and lidar sensor frame as $\mathcal{F}_i$ and $\mathcal{F}_s$. The lidar sensor frame at timestamp $t_j$ is denoted as $\mathcal{F}_{st_j}$. We consider two sets of corresponding measurements, $\mathbf{y}_{m,1}$ and $\mathbf{y}_{m,2}$ with ${m=1,\cdots,M}$, extracted from sequential images at time $t_{m,1}$ and $t_{m,2}$. For landmark $\mathbf{p}_m$ in the inertial frame, we have
+\begin{equation}
+\begin{split}
+    \mathbf{p}_{m1} &= \mathbf{T}_{si}(t_{m,1})\mathbf{p}_m \\
+    \mathbf{p}_{m2} &= \mathbf{T}_{si}(t_{m,2})\mathbf{p}_m.
+\end{split}
+\end{equation}
+The lidar image sensor model is
+\begin{equation}
+\begin{split}
+    \mathbf{y}_{m1} &= f\left(\mathbf{T}_{si}(t_{m,1})\mathbf{p}_m \right) + \mathbf{n}_1\\
+    \mathbf{y}_{m2} &= f\left(\mathbf{T}_{si}(t_{m,2})\mathbf{p}_m \right) + \mathbf{n}_2,
+\end{split}
+\end{equation}
+with $\mathbf{n}_1 \sim \mathcal{N}(\mathbf{0}, \mathbf{R}_{m,1})$ and $\mathbf{n}_2 \sim \mathcal{N}(\mathbf{0}, \mathbf{R}_{m,2})$.
+
+The incremental motion is 
+\begin{equation}
+    \mathbf{T}_{st_2, st_1}^{m} = \mathbf{T}_{si}(t_{m,2})\mathbf{T}_{si}^{-1}(t_{m,1}).
+\end{equation}
+The estimated position of landmark $m$ in $\mathcal{F}_{st_2}$ is 
+\begin{equation}
+    \hat{\mathbf{p}}_{m,2} = \mathbf{T}_{st_2, st_1}^{m} \mathbf{p}_{m,1}.
+\end{equation}
+
+For the motion-compensated RANSAC, we put a constant velocity motion prior $\bm{\varpi} = \begin{bmatrix} \mathbf{v} \\ \mathbf{w} \end{bmatrix}$ and the motion model is 
+\begin{equation}
+    \dot{\mathbf{T}}_{si}(t) = \bm{\varpi}^{\wedge} \mathbf{T}_{si}(t). 
+\end{equation}
+
+If we ignore the noise $\mathbf{n}_1$ in sensor frame 1, we have
+\begin{equation}
+    \mathbf{y}_{m,1} = f\left(\mathbf{T}_{si}(t_{m,1})\mathbf{p}_m\right) = f\left(\mathbf{p}_{m,1}\right).
+\end{equation}
+Then we have
+\begin{equation}
+    \mathbf{p}_{m,1} = f^{-1}\left(\mathbf{y}_{m,1}\right)
+\end{equation}
+and the estimated position of landmark $m$ in $\mathcal{F}_{st_2}$ is 
+\begin{equation}
+    \hat{\mathbf{p}}_{m,2} = \mathbf{T}_{st_2,st_1}^{m} f^{-1}\left(\mathbf{y}_{m,1}\right).
+\end{equation}
+
+The relative motion is 
+\begin{equation}
+    \begin{split}
+    \mathbf{T}_{si}(t_2) &= \mathbf{T}_{st_2,st_1}\mathbf{T}_{si}(t_1), \\
+    \bm{\xi} &= \bm{\varpi} (t_2 - t_1) = \bm{\varpi} \Delta t,
+    \end{split}
+\end{equation}
+and 
+\begin{equation}
+    \mathbf{T}_{st_2,st_1} = \exp((\bm{\varpi} \Delta t)^{\wedge}) = \exp (\xi^{\wedge}).
+\end{equation}
+
+For landmark $m$, we have the error
+\begin{equation}
+    \begin{split}
+    \mathbf{e}_m &= \mathbf{y}_{m,2} - \hat{\mathbf{y}}_{m,2}  \\
+    &= \mathbf{y}_{m,2} - f\left(\mathbf{T}_{st_2,st_1}^{m} f^{-1}(\mathbf{y}_{m,1})\right) \\
+    &= \mathbf{y}_{m,2} - f\left(\mathbf{T}_{st_2,st_1}^{m} \mathbf{p}_{m,1}\right) \\
+    &= \mathbf{y}_{m,2} - f\left(\exp{((\bm{\varpi} \Delta t)^{\wedge})} \mathbf{p}_{m,1}\right) \\
+    &= \mathbf{y}_{m,2} - f(g(\bm{\varpi}))
+    \end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+    \mathbf{T}_{st_2, st_1} &= \exp{((\bar{\bm{\xi}}+\delta \bm{\xi})^{\wedge})}  \\
+    &= \exp{((( \bar{\bm{\varpi}}+\delta \bm{\varpi}) \Delta t)^{\wedge})}  \\
+    & \approx \exp{((\mathcal{J}_{l}(\bar{\xi})\Delta t \Delta \bm{\varpi})^{\wedge})} \exp{(\bar{\xi}^{\wedge})} \\
+    & = \exp{((\mathcal{J}_{l}(\bar{\xi})\Delta t \Delta \bm{\varpi})^{\wedge})} \bar{\mathbf{T}}_{st_2,st_1}.
+\end{split}
+\end{equation}
+
+We treat the $\bar{\mathbf{p}}_{m,1}$ computation to be noise-less
+\begin{equation}
+\begin{split}
+    g(\bm{\varpi}) &= \mathbf{T}_{st_2, st_1}^{m} \bar{\mathbf{p}}_{m,1}  \\
+    &= \exp{((\mathcal{J}_{l}(\bar{\xi})\Delta t \Delta \bm{\varpi})^{\wedge})} \bar{\mathbf{T}}_{st_2,st_1} \bar{\mathbf{p}}_{m,1}
+\end{split}
+\end{equation}
+where $\mathcal{J}_{l}(\cdot)$ is the left Jacobian~\cite{barfoot2024state}.
+Define $\bm{\eta} = \mathcal{J}_{l}(\bar{\xi})\Delta t \Delta \bm{\varpi}$ and $\bar{\mathbf{g}} = \bar{\mathbf{T}}_{st_2,st_1} \bar{\mathbf{p}}_{m,1}$, we have 
+\begin{equation}
+    \begin{split}
+    g(\bm{\varpi}) &= \exp{(\bm{\eta}^{\wedge})} \bar{\mathbf{g}} \\
+    & \approx (1+\bm{\eta}^{\wedge}) \bar{\mathbf{g}}  \\
+    &= \bar{\mathbf{g}} + \bm{\eta}^{\wedge} \bar{\mathbf{g}}   \\
+    &= \bar{\mathbf{g}} + \bar{\mathbf{g}}^{\odot} \bm{\eta}    \\
+    &= \bar{\mathbf{g}} + \bar{\mathbf{g}}^{\odot} \mathcal{J}_{l}(\bar{\xi})\Delta t \Delta \bm{\varpi}.
+    \end{split}
+\end{equation}
+
+Hence, we have 
+\begin{equation}
+        \mathbf{e}_m \approx \bar{\mathbf{e}}_m - \mathbf{H}\delta \bm{\varpi}
+\end{equation}
+where the jacobian $\mathbf{H}_m$ is
+\begin{equation}
+\begin{split}
+    \mathbf{H}_m &= \left.\frac{\partial f}{\partial g}\right|_{\bar{\mathbf g}_m}  \bar{\mathbf{g}}^{\odot} \mathcal{J}_{l}(\bar{\xi})\Delta t  \\
+    &=\mathbf{F}_m \bar{\mathbf{g}}^{\odot} \mathcal{J}_{l}(\bar{\xi})\Delta t.
+\end{split}
+\end{equation}
+
+Then we can solve for the $\bm{\varpi}$ incrementally through Gauss-Newton solver with
+\begin{equation}
+    \left(\sum_{m} \mathbf{H}^T_m \mathbf{R}_{m,2}^{-1}\mathbf{H}_m\right)\delta \bm{\varpi} = \sum_{m} \mathbf{H}_m^{T} \mathbf{R}_{m,2}^{-1} \bar{\mathbf{e}}_m.
+\end{equation}
+

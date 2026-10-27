@@ -1,0 +1,6 @@
+[submodule "deps/pylgmath"]
+	path = deps/pylgmath
+	url = https://github.com/utiasASRL/pylgmath.git
+[submodule "deps/pysteam"]
+	path = deps/pysteam
+	url = https://github.com/utiasASRL/pysteam.git

@@ -1,0 +1,225 @@
+%declaration of the type of document
+\documentclass[11pt, letterpaper]{harvardml}
+
+% Header Setup
+\newcommand{\leftHeader}{Lidar Visual T\&R $\vert$ July 1, 2025}
+\newcommand{\rightHeader}{Wenda}
+\newcommand{\rightFooter}{\tiny{last revised: \today}}
+\newcommand{\leftFooter}{}
+
+% A math package to type formula
+% \usepackage[centertags]{amsmath}
+
+% Use tikz for plotting
+% tikz
+\usepackage{tikz}
+\usepackage{tikz-3dplot}
+\usetikzlibrary{calc,patterns,angles,quotes}
+% A package for graphics
+\usepackage{graphicx}
+% \usepackage{subfigure}
+\usepackage{subcaption}
+\usepackage{amsmath}
+
+% A package for appendicies
+\usepackage{titletoc}
+\usepackage[titletoc]{appendix}
+
+% Packages for spacing
+\usepackage{setspace}
+\usepackage{mdwlist}
+\usepackage{bm}
+\usepackage[compact]{titlesec}
+\usepackage[belowskip=-10pt, aboveskip=0pt]{caption}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+% A highlight text package
+\usepackage{color}
+\newcommand{\hi}[1]{\colorbox{yellow}{#1}}
+
+%Hyperlink package
+\usepackage{hyperref}
+\hypersetup{
+colorlinks,%
+citecolor=blue,%
+filecolor=black,%
+linkcolor=black,%
+urlcolor=blue,
+pdfview=Fit
+}
+
+% Package for code
+\usepackage{listings}  
+
+% Package for landscape
+\usepackage{pdflscape}
+
+%A package to include pdfs in the document
+\usepackage{pdfpages} 
+\usepackage{epstopdf}
+\epstopdfDeclareGraphicsRule{.tif}{png}{.png}{%
+  convert #1 \OutputFile         
+}
+\DeclareGraphicsRule{.tif}{png}{.png}{%
+  \noexpand\epstopdfcall{convert #1 \noexpand\OutputFile}%
+}
+\epstopdfsetup{outdir=./}
+
+%A table multirow package & orientation
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{rotating}
+
+% No hyphenations
+\hyphenpenalty=5000
+
+% A package to recognize URLs
+\usepackage{url}
+
+% A package for end notes
+\usepackage{endnotes}
+
+% Rename latex commands to compress the command name
+\newcommand{\rr}{\raggedright}
+\newcommand{\nl}{\tabularnewline}
+
+% A package for headers
+\usepackage{fancyhdr}
+\usepackage{epstopdf}
+
+% Math symbol
+\usepackage{amssymb}
+
+% Diagonal crossout
+\usepackage{cancel}
+
+% Margins and setups
+\setlength{\topmargin}{0in}
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0.2in}
+\setlength{\textheight}{8.5in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\voffset}{-0.6in}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+%\setlength{\intextsep}{0.5ex}
+%\titlespacing{\section}{0pt}{*0}{*0}
+\titlespacing{\subsection}{0pt}{*0}{*0}
+%\setlength{\parindent}{0.25in}
+\setlength{\parskip}{0.05in}
+  
+% Header and footer
+\pagestyle{fancyplain}
+\setlength{\headheight}{15pt}
+\lhead{\leftHeader}
+\chead{}
+\rhead{\rightHeader}
+\lfoot{\leftFooter}
+\rfoot{\rightFooter}
+\usepackage{lastpage}
+\cfoot{\thepage\ of \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\headheight = 50pt
+
+% Hyperlink package
+\usepackage{hyperref}
+
+% Table fix-width
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+% Title format
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\fontsize{15}{15}\bfseries}{\thesection}{1em}{}
+
+% Circled text
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+            \node[shape=circle,draw,inner sep=2pt] (char) {#1};}}
+
+% List with letters
+\usepackage{enumerate}
+%the contents of the document setup to include many separate files
+%\raggedbottom
+%\pagenumbering{arabic}
+% declare argmin
+\DeclareMathOperator*{\argmin}{arg\,min}
+% Color box equation
+\usepackage{tcolorbox}
+\tcbuselibrary{theorems}
+
+% Color definitions
+\definecolor{grey1}{RGB}{192,192,192}
+\definecolor{grey2}{RGB}{178,178,178}
+\definecolor{grey3}{RGB}{150,150,150}
+\definecolor{grey4}{RGB}{119,119,119}
+\definecolor{grey5}{RGB}{77,77,77}
+\definecolor{green}{RGB}{112,173,71}
+\definecolor{blue}{RGB}{20,20,255}
+\definecolor{red}{RGB}{192,0,0}
+\definecolor{yellow}{RGB}{255,192,0}
+
+% Color of table cell
+\usepackage{xcolor,colortbl}
+\newcommand{\done}{\cellcolor{teal}done}  %{0.9}
+\newcommand{\hcyan}[1]{{\color{teal} #1}}
+
+% Pseudocode
+\usepackage{algorithm}
+%\usepackage[noend]{algpseudocode} % no end written
+\usepackage{algpseudocode}
+
+% Itemize spacing
+\usepackage{enumitem}
+%\setlist[1]{itemsep=-0.5em}
+\setlist[itemize]{itemsep=-0.em, topsep=0pt}
+\setlist[enumerate]{itemsep=-0.em, topsep=0pt}
+
+% For combining continuous numberings
+\usepackage[noadjust]{cite}
+
+% Itemize shortcut command
+\newcommand{\itemTri}{\item[$\triangleright$]}
+
+% Todo shortcut
+\newcommand{\todo}{\textsf{\textbf{Todo: }}}
+
+% Bibliography
+\usepackage[round]{natbib}
+
+% Table of contents
+\usepackage{tocloft}
+
+% Caption font size
+\captionsetup{font=footnotesize}
+
+% Environment
+\usepackage{framed}
+\newenvironment{boxsec}%
+{%
+\begin{framed}
+
+}
+{%
+\end{framed}%
+}%
+
+\title{TITLE} % not used
+\begin{document}
+\begin{spacing}{1.15}
+\pagenumbering{arabic}
+This document summarizes the equations used in the lidar-image teach and repeat navigation project. The main references of this document are~\cite{barfoot2024state,anderson2013ransac,tong2014pose, anderson2015relative}.
+\addtocounter{section}{0}
+\input{sections/1.lidar_image_vo}
+\input{sections/2.da_cf}
+\input{sections/3.lidar_image_pixel_match}
+% \input{sections/6.general_icp_cost}
+\end{spacing}
+\clearpage
+\bibliographystyle{SageH}
+
+\bibliography{reference}
+\end{document}

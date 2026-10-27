@@ -1,0 +1,84 @@
+\relax 
+\providecommand\zref@newlabel[2]{}
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{barfoot2024state,anderson2013ransac,tong2014pose,anderson2015relative}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Lidar Image Visual Odometry}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Motion Compensated RANSAC}{1}{subsection.1.1}\protected@file@percent }
+\citation{barfoot2024state}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Degeneracy-Aware Complementary Fusion}{3}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Recap of LiDAR Localization Degeneracy Detection}{3}{subsection.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Complementary Information in the Degenerate Space}{4}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Joint Optimization Restricted to the Degenerate Space}{5}{subsection.2.3}\protected@file@percent }
+\newlabel{eq:joint_ls}{{33}{5}{Joint Optimization Restricted to the Degenerate Space}{equation.2.33}{}}
+\newlabel{eq:joint_ls_simple}{{34}{5}{Joint Optimization Restricted to the Degenerate Space}{equation.2.34}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Intensity-Image Feature Residual Formulation}{5}{subsection.2.4}\protected@file@percent }
+\newlabel{sec:feat_res_2d}{{2.4}{5}{Intensity-Image Feature Residual Formulation}{subsection.2.4}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.1}3D point covariance of an intensity-image feature}{6}{subsubsection.2.4.1}\protected@file@percent }
+\newlabel{sec:feat_point_cov}{{2.4.1}{6}{3D point covariance of an intensity-image feature}{subsubsection.2.4.1}{}}
+\newlabel{eq:point_cov}{{40}{6}{3D point covariance of an intensity-image feature}{equation.2.40}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.2}Predicted measurement in the second frame}{6}{subsubsection.2.4.2}\protected@file@percent }
+\newlabel{eq:pred_point}{{41}{6}{Predicted measurement in the second frame}{equation.2.41}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.3}Residual covariance}{7}{subsubsection.2.4.3}\protected@file@percent }
+\newlabel{eq:res_cov_2d}{{45}{7}{Residual covariance}{equation.2.45}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.4}Cost and Hessian}{7}{subsubsection.2.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Intensity-Image Feature 3D Point-to-Point Residual Formulation}{7}{subsection.2.5}\protected@file@percent }
+\newlabel{sec:feat_res_3d}{{2.5}{7}{Intensity-Image Feature 3D Point-to-Point Residual Formulation}{subsection.2.5}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.5.1}Point-to-point residual}{7}{subsubsection.2.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.5.2}Residual covariance}{8}{subsubsection.2.5.2}\protected@file@percent }
+\newlabel{eq:res_cov_3d}{{50}{8}{Residual covariance}{equation.2.50}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.5.3}Cost and Hessian}{8}{subsubsection.2.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}Discussion}{8}{subsection.2.6}\protected@file@percent }
+\citation{barfoot2024state}
+\citation{ouster_sdk_destagger}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Lidar Image Pixel Correspondences under Motion Distortion}{9}{section.3}\protected@file@percent }
+\newlabel{sec:pixel_match}{{3}{9}{Lidar Image Pixel Correspondences under Motion Distortion}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Frames and Lidar Image Model}{9}{subsection.3.1}\protected@file@percent }
+\newlabel{eq:meas_col}{{52}{9}{Frames and Lidar Image Model}{equation.3.52}{}}
+\citation{pfreundschuh2024coin}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.1}Ouster beam model and inverse projection}{10}{subsubsection.3.1.1}\protected@file@percent }
+\newlabel{eq:inv_proj}{{53}{10}{Ouster beam model and inverse projection}{equation.3.53}{}}
+\newlabel{eq:destagger}{{54}{10}{Ouster beam model and inverse projection}{equation.3.54}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.2}Projection model}{10}{subsubsection.3.1.2}\protected@file@percent }
+\citation{anderson2015relative,barfoot2024state}
+\newlabel{eq:proj}{{56}{11}{Projection model}{equation.3.56}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces Lidar projection $f(\mathbf  {p})$, Equation~\eqref  {eq:proj} (\texttt  {OusterModel.project})}}{12}{algorithm.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{alg:proj}{{1}{12}{Lidar projection $f(\mathbf {p})$, Equation~\eqref {eq:proj} (\texttt {OusterModel.project})}{algorithm.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Per-Column Sensor Poses}{12}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Sensor pose and relative sensor motion}{13}{subsubsection.3.2.1}\protected@file@percent }
+\newlabel{eq:sensor_pose}{{62}{13}{Sensor pose and relative sensor motion}{equation.3.62}{}}
+\newlabel{eq:rel_pose}{{63}{13}{Sensor pose and relative sensor motion}{equation.3.63}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}Per-column motion within a scan}{13}{subsubsection.3.2.2}\protected@file@percent }
+\newlabel{eq:col_pose}{{64}{13}{Per-column motion within a scan}{equation.3.64}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Removing and Re-Applying the Motion Distortion}{13}{subsection.3.3}\protected@file@percent }
+\newlabel{eq:mdist}{{65}{13}{Removing and Re-Applying the Motion Distortion}{equation.3.65}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Relative Pose between the Two Scans}{13}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Predicted Pixel in the Raw Image $B$}{14}{subsection.3.5}\protected@file@percent }
+\newlabel{eq:pred_pixel}{{69}{14}{Predicted Pixel in the Raw Image $B$}{equation.3.69}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.1}The circular dependency and the fixed point}{14}{subsubsection.3.5.1}\protected@file@percent }
+\newlabel{eq:fixed_point}{{71}{14}{The circular dependency and the fixed point}{equation.3.71}{}}
+\newlabel{eq:iteration}{{72}{14}{The circular dependency and the fixed point}{equation.3.72}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.2}The azimuth seam}{15}{subsubsection.3.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Validity Checks}{15}{subsection.3.6}\protected@file@percent }
+\newlabel{eq:range_check}{{75}{15}{Validity Checks}{equation.3.75}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {2}{\ignorespaces Pixel correspondences $A \rightarrow B$}}{16}{algorithm.2}\protected@file@percent }
+\newlabel{alg:pixel_match}{{2}{16}{Pixel correspondences $A \rightarrow B$}{algorithm.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Interpretation of the Sub-Pixel Correspondences}{16}{subsection.3.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Validation}{16}{subsection.3.8}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Symbols and their names in the implementation (\texttt  {make\_pairs.py}, \texttt  {motion\_distortion.py}, \texttt  {ouster\_model.py}).}}{17}{table.caption.1}\protected@file@percent }
+\newlabel{tab:pixel_match_symbols}{{1}{17}{Symbols and their names in the implementation (\texttt {make\_pairs.py}, \texttt {motion\_distortion.py}, \texttt {ouster\_model.py})}{table.caption.1}{}}
+\bibstyle{SageH}
+\bibdata{reference}
+\bibcite{anderson2013ransac}{{1}{2013}{{Anderson and Barfoot}}{{}}}
+\bibcite{anderson2015relative}{{2}{2015}{{Anderson et~al.}}{{Anderson, MacTavish and Barfoot}}}
+\bibcite{barfoot2024state}{{3}{2024}{{Barfoot}}{{}}}
+\bibcite{ouster_sdk_destagger}{{4}{2024}{{Ouster Inc.}}{{}}}
+\bibcite{pfreundschuh2024coin}{{5}{2024}{{Pfreundschuh et~al.}}{{Pfreundschuh, Oleynikova, Cadena, Siegwart and Andersson}}}
+\bibcite{tong2014pose}{{6}{2014}{{Tong et~al.}}{{Tong, Anderson, Dong and D.~Barfoot}}}
+\ttl@finishall
+\newlabel{LastPage}{{}{18}{}{page.18}{}}
+\gdef\lastpage@lastpage{18}
+\gdef\lastpage@lastpageHy{18}
+\gdef \@abspage@last{18}

@@ -1,0 +1,6 @@
+# results of the scripts (outputs/<FOLDER_NAME>/...)
+outputs/
+
+# Python
+__pycache__/
+*.pyc
