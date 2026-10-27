@@ -41,12 +41,12 @@ from rosbags.highlevel import AnyReader
 from rosbags.typesys import Stores, get_typestore
 
 import config
-from bag_io import iter_scans, read_metadata, read_static_transform
-from motion_distortion import mdist_scan
-from odometry_icp import OdometryICP
-from ouster_model import OusterModel
-from point_map import PointMap
-from preprocessing import preprocess
+from core.bag_io import iter_scans, read_metadata, read_static_transform
+from core.motion_distortion import mdist_scan
+from core.odometry_icp import OdometryICP
+from core.ouster_model import OusterModel
+from core.point_map import PointMap
+from core.preprocessing import preprocess
 
 ######## Parameters (edit by hand) ########
 cfg = SimpleNamespace(

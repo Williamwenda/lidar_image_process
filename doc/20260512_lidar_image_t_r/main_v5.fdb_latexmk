@@ -1,15 +1,14 @@
 # Fdb version 4
-["bibtex main_v5"] 1793072006.72168 "main_v5.aux" "main_v5.bbl" "main_v5" 1793072007.52187 0
+["bibtex main_v5"] 1793114004.95758 "main_v5.aux" "main_v5.bbl" "main_v5" 1793114041.70043 0
   "./SageH.bst" 1790727542 30846 01d0c4e084498df630f0d3adc8d9e106 ""
   "./reference.bib" 1793052303.94634 5914 4299b8c4889d4372ed5f620596c8fdd7 ""
-  "main_v5.aux" 1793072007.35061 8696 8aab2a02ae7e0ca8bc36d9458f967c58 "pdflatex"
+  "main_v5.aux" 1793114041.51236 9065 ce702da29f957773a5adcaeedad3b128 "pdflatex"
   (generated)
   "main_v5.bbl"
   "main_v5.blg"
   (rewritten before read)
-["pdflatex"] 1793072006.78566 "/home/wenda/repositories/vf_learning/lidar_image_process/doc/20260512_lidar_image_t_r/main_v5.tex" "main_v5.pdf" "main_v5" 1793072007.52196 0
+["pdflatex"] 1793114040.96065 "main_v5.tex" "main_v5.pdf" "main_v5" 1793114041.70052 0
   "/etc/texmf/web2c/texmf.cnf" 1750806027.45397 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/wenda/repositories/vf_learning/lidar_image_process/doc/20260512_lidar_image_t_r/main_v5.tex" 1793035489.58323 5426 3c962188937bf0bb342d338107dc3516 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/adobe/courier/pcrr7t.tfm" 1136768653 960 379cc0019370a9e0208a0a3f949f847a ""
@@ -284,13 +283,13 @@
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1750806554.92599 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1750806593 8213653 a7f571a826e9da14f675b058f4a5112e ""
   "harvardml.cls" 1790727542 2642 f0e6a9b68670106c1f8506c5c95b6b63 ""
-  "main_v5.aux" 1793072007.35061 8696 8aab2a02ae7e0ca8bc36d9458f967c58 "pdflatex"
-  "main_v5.bbl" 1793072006.78238 1898 d6ef3ebd69242a1389ac64adc274efc9 "bibtex main_v5"
-  "main_v5.out" 1793072007.35061 7277 e408ded926a7418f71b7b95fcc1c2952 "pdflatex"
+  "main_v5.aux" 1793114041.51236 9065 ce702da29f957773a5adcaeedad3b128 "pdflatex"
+  "main_v5.bbl" 1793114005.01907 1916 9e62cb59b66b8e86a18b9f5f238cf872 "bibtex main_v5"
+  "main_v5.out" 1793114041.51336 7277 e408ded926a7418f71b7b95fcc1c2952 "pdflatex"
   "main_v5.tex" 1793035489.58323 5426 3c962188937bf0bb342d338107dc3516 ""
   "sections/1.lidar_image_vo.tex" 1791382186.52541 5397 fdca8a129487c642f7678040efa60fb2 ""
   "sections/2.da_cf.tex" 1792504172.52868 17555 8139cba8f5c199845efd26f9a91bbb13 ""
-  "sections/3.lidar_image_pixel_match.tex" 1793072005.81269 30030 9e1f643d801418718fe6c9510e4a352c ""
+  "sections/3.lidar_image_pixel_match.tex" 1793114040.90671 32527 6e2aecfd7863dfb7ab8cb84f119cb2c2 ""
   (generated)
   "main_v5.aux"
   "main_v5.log"

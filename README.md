@@ -40,7 +40,7 @@ stop instead of overwriting results already in it.
 
 - Python 3 with `numpy`, `scipy`, `open3d`, `rosbags`, `opencv-python`, `matplotlib`
   (no ROS installation needed: `rosbags` reads the bag directly).
-- `pylgmath` and `pysteam` are git submodules in `deps/` and used from there. `deps_path.py` puts
+- `pylgmath` and `pysteam` are git submodules in `deps/` and used from there. `core/deps_path.py` puts
   them on the Python path, so nothing has to be installed. Clone with
   `git clone --recurse-submodules <repo>`, or run `git submodule update --init` after a plain clone.
 - The bag path is set in `config.py` (`BAG`).
@@ -55,14 +55,14 @@ stop instead of overwriting results already in it.
 | `visualize_odometry.py` | Trajectory plot, map rebuilt from the odometry, and two frames aligned by the odometry (Open3D windows + saved files). |
 | `visualize_pairs.py` | Matches two arbitrary frames (`FRAME_A`, `FRAME_B`) and shows the two point clouds side by side: points with a correspondence dark gray, without light gray. Optional 2-D dense-matching views (`PLOT_2D`). |
 | `load_data.py` | Prints the content (keys, shapes, ranges) of saved frame and pair files. |
-| `odometry_icp.py` | `OdometryICP`: the port of vtr's odometry (knots, priors, two-stage ICP loop, convergence, prior for the next scan). `sample_trajectory` evaluates the trajectory at the 1024 column times. |
-| `cost_terms.py` | pysteam cost terms: batched point-to-plane (points grouped in time bins share one interpolated pose), and the joint 12x12 pose + velocity prior. |
-| `point_map.py` | `PointMap`: sliding voxel map used as the ICP target (normals, planarity scores, point life time). |
-| `preprocessing.py` | Selects the ICP query points: removes the robot body, crops the range, voxel-downsamples. |
-| `motion_distortion.py` | `mdist` (remove motion distortion) and `re_mdist` (re-apply it). |
-| `ouster_model.py` | `OusterModel`: image layout and the projection of 3-D points to sub-pixel image coordinates (inverse Ouster beam model). |
-| `bag_io.py` | Reads scans (point cloud + signal + reflectivity image, matched by stamp), the Ouster metadata, and static transforms (`T_s_r`) from the bag. |
-| `deps_path.py` | Adds `deps/pylgmath` and `deps/pysteam` to the Python path. |
+| `core/odometry_icp.py` | `OdometryICP`: the port of vtr's odometry (knots, priors, two-stage ICP loop, convergence, prior for the next scan). `sample_trajectory` evaluates the trajectory at the 1024 column times. |
+| `core/cost_terms.py` | pysteam cost terms: batched point-to-plane (points grouped in time bins share one interpolated pose), and the joint 12x12 pose + velocity prior. |
+| `core/point_map.py` | `PointMap`: sliding voxel map used as the ICP target (normals, planarity scores, point life time). |
+| `core/preprocessing.py` | Selects the ICP query points: removes the robot body, crops the range, voxel-downsamples. |
+| `core/motion_distortion.py` | `mdist` (remove motion distortion) and `re_mdist` (re-apply it). |
+| `core/ouster_model.py` | `OusterModel`: image layout and the projection of 3-D points to sub-pixel image coordinates (inverse Ouster beam model). |
+| `core/bag_io.py` | Reads scans (point cloud + signal + reflectivity image, matched by stamp), the Ouster metadata, and static transforms (`T_s_r`) from the bag. |
+| `core/deps_path.py` | Adds `deps/pylgmath` and `deps/pysteam` to the Python path. |
 | `tests/` | Tests (see below). |
 
 How the modules connect:
@@ -166,6 +166,4 @@ mounting, while the robot follows a known path.
   along its own surface cannot be detected from two frames.
 - **The first scan** is put into the map without motion compensation (as in vtr), so the map frame
   has a constant offset of about half a scan of motion. Relative poses are not affected.
-- **Not yet compared against the C++ vtr3 odometry on the same bag.**
-- **Simplified from vtr:** preprocessing and the map (no planarity-based sampling, no map cropping,
-  no gyro terms).
+- **Simplified from vtr:** preprocessing and the map (no planarity-based sampling, no map cropping, no gyro terms).

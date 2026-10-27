@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import deps_path  # noqa: F401
+from core import deps_path  # noqa: F401
 
 import numpy as np
 from pylgmath import Transformation
@@ -18,7 +18,7 @@ from pysteam.problem import L2LossFunc, OptimizationProblem, StaticNoiseModel, W
 from pysteam.trajectory import Time
 from pysteam.trajectory.const_vel import Interface
 
-from cost_terms import PointToPlaneCostTerm, StatePriorCostTerm
+from core.cost_terms import PointToPlaneCostTerm, StatePriorCostTerm
 
 
 def make_trajectory(rng):

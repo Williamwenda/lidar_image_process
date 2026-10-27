@@ -13,7 +13,7 @@ T_r(t + dt)_M = exp(dt * w^) @ T_r(t)_M with w = w_m_r_in_r (forward motion -> n
 import numpy as np
 import open3d as o3d
 
-import deps_path  # noqa: F401
+from core import deps_path  # noqa: F401
 from pylgmath import se3op
 
 GROUND_Z = -0.3      # ground height in the world frame [m]

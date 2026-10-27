@@ -43,8 +43,8 @@ import open3d as o3d
 from scipy.spatial.transform import Rotation
 
 import config
-from motion_distortion import re_mdist
-from ouster_model import OusterModel
+from core.motion_distortion import re_mdist
+from core.ouster_model import OusterModel
 
 ######## Parameters (edit by hand) ########
 cfg = SimpleNamespace(

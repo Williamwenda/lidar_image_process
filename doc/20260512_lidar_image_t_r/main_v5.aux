@@ -43,32 +43,36 @@
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.2}Projection model}{10}{subsubsection.3.1.2}\protected@file@percent }
 \citation{anderson2015relative,barfoot2024state}
 \newlabel{eq:proj}{{56}{11}{Projection model}{equation.3.56}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Per-Column Sensor Poses}{11}{subsection.3.2}\protected@file@percent }
 \@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces Lidar projection $f(\mathbf  {p})$, Equation~\eqref  {eq:proj} (\texttt  {OusterModel.project})}}{12}{algorithm.1}\protected@file@percent }
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
 \newlabel{alg:proj}{{1}{12}{Lidar projection $f(\mathbf {p})$, Equation~\eqref {eq:proj} (\texttt {OusterModel.project})}{algorithm.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Per-Column Sensor Poses}{12}{subsection.3.2}\protected@file@percent }
+\newlabel{eq:traj_interp}{{59}{12}{Per-Column Sensor Poses}{equation.3.59}{}}
+\newlabel{eq:traj_extrap}{{61}{12}{Per-Column Sensor Poses}{equation.3.61}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Sensor pose and relative sensor motion}{13}{subsubsection.3.2.1}\protected@file@percent }
 \newlabel{eq:sensor_pose}{{62}{13}{Sensor pose and relative sensor motion}{equation.3.62}{}}
 \newlabel{eq:rel_pose}{{63}{13}{Sensor pose and relative sensor motion}{equation.3.63}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}Per-column motion within a scan}{13}{subsubsection.3.2.2}\protected@file@percent }
 \newlabel{eq:col_pose}{{64}{13}{Per-column motion within a scan}{equation.3.64}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Removing and Re-Applying the Motion Distortion}{13}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:mdist}{{3.3}{13}{Removing and Re-Applying the Motion Distortion}{subsection.3.3}{}}
 \newlabel{eq:mdist}{{65}{13}{Removing and Re-Applying the Motion Distortion}{equation.3.65}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Relative Pose between the Two Scans}{13}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Relative Pose between the Two Scans}{14}{subsection.3.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Predicted Pixel in the Raw Image $B$}{14}{subsection.3.5}\protected@file@percent }
 \newlabel{eq:pred_pixel}{{69}{14}{Predicted Pixel in the Raw Image $B$}{equation.3.69}{}}
+\newlabel{eq:pred_pixel_full}{{70}{14}{Predicted Pixel in the Raw Image $B$}{equation.3.70}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.1}The circular dependency and the fixed point}{14}{subsubsection.3.5.1}\protected@file@percent }
-\newlabel{eq:fixed_point}{{71}{14}{The circular dependency and the fixed point}{equation.3.71}{}}
-\newlabel{eq:iteration}{{72}{14}{The circular dependency and the fixed point}{equation.3.72}{}}
+\newlabel{eq:fixed_point}{{71}{15}{The circular dependency and the fixed point}{equation.3.71}{}}
+\newlabel{eq:iteration}{{72}{15}{The circular dependency and the fixed point}{equation.3.72}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.2}The azimuth seam}{15}{subsubsection.3.5.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Validity Checks}{15}{subsection.3.6}\protected@file@percent }
-\newlabel{eq:range_check}{{75}{15}{Validity Checks}{equation.3.75}{}}
 \@writefile{loa}{\contentsline {algorithm}{\numberline {2}{\ignorespaces Pixel correspondences $A \rightarrow B$}}{16}{algorithm.2}\protected@file@percent }
 \newlabel{alg:pixel_match}{{2}{16}{Pixel correspondences $A \rightarrow B$}{algorithm.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Validity Checks}{16}{subsection.3.6}\protected@file@percent }
+\newlabel{eq:range_check}{{75}{16}{Validity Checks}{equation.3.75}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Interpretation of the Sub-Pixel Correspondences}{16}{subsection.3.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Validation}{16}{subsection.3.8}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Symbols and their names in the implementation (\texttt  {make\_pairs.py}, \texttt  {motion\_distortion.py}, \texttt  {ouster\_model.py}).}}{17}{table.caption.1}\protected@file@percent }
-\newlabel{tab:pixel_match_symbols}{{1}{17}{Symbols and their names in the implementation (\texttt {make\_pairs.py}, \texttt {motion\_distortion.py}, \texttt {ouster\_model.py})}{table.caption.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Validation}{17}{subsection.3.8}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Symbols and their names in the implementation (\texttt  {make\_pairs.py}, \texttt  {core/motion\_distortion.py}, \texttt  {core/ouster\_model.py}).}}{17}{table.caption.1}\protected@file@percent }
+\newlabel{tab:pixel_match_symbols}{{1}{17}{Symbols and their names in the implementation (\texttt {make\_pairs.py}, \texttt {core/motion\_distortion.py}, \texttt {core/ouster\_model.py})}{table.caption.1}{}}
 \bibstyle{SageH}
 \bibdata{reference}
 \bibcite{anderson2013ransac}{{1}{2013}{{Anderson and Barfoot}}{{}}}

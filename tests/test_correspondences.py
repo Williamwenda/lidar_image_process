@@ -14,7 +14,7 @@ import numpy as np
 
 import config
 import make_pairs
-from ouster_model import OusterModel
+from core.ouster_model import OusterModel
 
 ODOMETRY_DIR = config.ODOMETRY_DIR   # folder set in config.py
 NUM_FRAMES = 5

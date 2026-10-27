@@ -32,12 +32,12 @@ from scipy.spatial.transform import Rotation
 import lidar_simulator as sim
 import make_pairs
 import run_odometry
-from bag_io import read_metadata, read_static_transform
-from motion_distortion import mdist_scan
-from odometry_icp import OdometryICP
-from ouster_model import OusterModel
-from point_map import PointMap
-from preprocessing import preprocess
+from core.bag_io import read_metadata, read_static_transform
+from core.motion_distortion import mdist_scan
+from core.odometry_icp import OdometryICP
+from core.ouster_model import OusterModel
+from core.point_map import PointMap
+from core.preprocessing import preprocess
 
 ######## Parameters ########
 NUM_SCANS = 40          # 4 s of driving

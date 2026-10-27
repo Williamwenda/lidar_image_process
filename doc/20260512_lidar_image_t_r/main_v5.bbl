@@ -4,15 +4,19 @@
 \providecommand{\urlprefix}{URL }
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{DOI:\discretionary{}{}{}#1}\else
-  \providecommand{\doi}{DOI:\discretionary{}{}{}\begingroup \urlstyle{rm}\Url}\fi
+  \providecommand{\doi}{DOI:\discretionary{}{}{}\begingroup
+  \urlstyle{rm}\Url}\fi
 
 \bibitem[{Anderson and Barfoot(2013)}]{anderson2013ransac}
 Anderson S and Barfoot TD (2013) Ransac for motion-distorted 3d visual sensors.
-\newblock In: \emph{2013 IEEE/RSJ International Conference on Intelligent Robots and Systems}. IEEE, pp. 2093--2099.
+\newblock In: \emph{2013 IEEE/RSJ International Conference on Intelligent
+  Robots and Systems}. IEEE, pp. 2093--2099.
 
-\bibitem[{Anderson et~al.(2015)Anderson, MacTavish and Barfoot}]{anderson2015relative}
+\bibitem[{Anderson et~al.(2015)Anderson, MacTavish and
+  Barfoot}]{anderson2015relative}
 Anderson S, MacTavish K and Barfoot TD (2015) Relative continuous-time slam.
-\newblock \emph{The International Journal of Robotics Research} 34(12): 1453--1479.
+\newblock \emph{The International Journal of Robotics Research} 34(12):
+  1453--1479.
 
 \bibitem[{Barfoot(2024)}]{barfoot2024state}
 Barfoot TD (2024) \emph{State estimation for robotics: Second edition}.
@@ -20,15 +24,20 @@ Barfoot TD (2024) \emph{State estimation for robotics: Second edition}.
 
 \bibitem[{{Ouster Inc.}(2024)}]{ouster_sdk_destagger}
 {Ouster Inc} (2024) Ouster {SDK} documentation: Staggering and destaggering.
-\newblock \url{https://static.ouster.dev/sdk-docs/reference/lidar-scan.html#staggering-and-destaggering}.
+\newblock
+  \url{https://static.ouster.dev/sdk-docs/reference/lidar-scan.html#staggering-and-destaggering}.
 \newblock Accessed: 2026-10-26.
 
-\bibitem[{Pfreundschuh et~al.(2024)Pfreundschuh, Oleynikova, Cadena, Siegwart and Andersson}]{pfreundschuh2024coin}
-Pfreundschuh P, Oleynikova H, Cadena C, Siegwart R and Andersson O (2024) {COIN-LIO}: Complementary intensity-augmented {LiDAR} inertial odometry.
-\newblock In: \emph{2024 IEEE International Conference on Robotics and Automation (ICRA)}. IEEE, pp. 1730--1737.
+\bibitem[{Pfreundschuh et~al.(2024)Pfreundschuh, Oleynikova, Cadena, Siegwart
+  and Andersson}]{pfreundschuh2024coin}
+Pfreundschuh P, Oleynikova H, Cadena C, Siegwart R and Andersson O (2024)
+  {COIN-LIO}: Complementary intensity-augmented {LiDAR} inertial odometry.
+\newblock In: \emph{2024 IEEE International Conference on Robotics and
+  Automation (ICRA)}. IEEE, pp. 1730--1737.
 
 \bibitem[{Tong et~al.(2014)Tong, Anderson, Dong and D.~Barfoot}]{tong2014pose}
-Tong CH, Anderson S, Dong H and D~Barfoot T (2014) Pose interpolation for laser-based visual odometry.
+Tong CH, Anderson S, Dong H and D~Barfoot T (2014) Pose interpolation for
+  laser-based visual odometry.
 \newblock \emph{Journal of Field Robotics} 31(5): 731--757.
 
 \end{thebibliography}

@@ -23,8 +23,8 @@ import numpy as np
 from rosbags.highlevel import AnyReader
 from rosbags.typesys import Stores, get_typestore
 
-from bag_io import iter_scans, read_metadata
-from ouster_model import OusterModel
+from core.bag_io import iter_scans, read_metadata
+from core.ouster_model import OusterModel
 
 ######## Parameters (edit by hand) ########
 BAG = "/home/wenda/ASRL/vtr3/data/ouster_lidar/rosbag2_2025_05_21-11_02_59"

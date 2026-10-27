@@ -63,7 +63,7 @@ The projection $f(\mathbf{p})$ maps an arbitrary 3D point in the lidar frame, no
 \end{equation}
 Our $f(\cdot)$ is the exact inverse of Equation~\eqref{eq:inv_proj}, which adds three corrections to it:
 \begin{enumerate}
-    \item \textbf{Measured beam altitudes.} The altitudes $\alpha_0 > \cdots > \alpha_{H-1}$ ($20.9^{\circ}$ to $-21.8^{\circ}$) are not evenly spaced (gaps of $0.26$--$0.37^{\circ}$), so $v$ is interpolated linearly between the two neighbouring beams, $v = k + (\alpha_k - \phi)/(\alpha_k - \alpha_{k+1})$, and extrapolated outside the field of view. COIN-LIO does the same.($\alpha_k$ are the calibrated altitude angles that is provided as the \texttt{beam\_altitude\_angles} array in the \texttt{meta.json} file)
+    \item \textbf{Measured beam altitudes.} The altitudes $\alpha_0 > \cdots > \alpha_{H-1}$ ($20.9^{\circ}$ to $-21.8^{\circ}$) are not evenly spaced (gaps of $0.26$--$0.37^{\circ}$), so $v$ is interpolated linearly between the two neighbouring beams, $v = k + (\alpha_k - \phi)/(\alpha_k - \alpha_{k+1})$, and extrapolated outside the field of view. ($\alpha_k$ are the calibrated altitude angles that is provided as the \texttt{beam\_altitude\_angles} array in the \texttt{meta.json} file)
     \item \textbf{Per-row azimuth residual.} Solving Equation~\eqref{eq:destagger} for $u$ gives $u = [ W\left(1 - (\theta - \delta_{\lfloor v \rceil})/2\pi\right) ] \bmod W$. Note, $\delta_{\lfloor v \rceil}$ can be directly computed from the json file parameter. $\delta_{\lfloor v \rceil} = (\frac{2\pi s_{\lfloor v \rceil}}{W})-\beta_{\lfloor v \rceil}$, where $s_{\lfloor v \rceil}$ is the pixel shift \texttt{pixel\_shift\_by\_row[v]} in pixels and $\beta_{\lfloor v \rceil}$ is the corresponding azimuth offset, \texttt{beam\_azimuth\_angles[v]} in radians.
     \item \textbf{Beam origin offset.} $\theta$ and $\phi$ are measured from the beam origin $n\,[\cos\epsilon, \sin\epsilon, 0]^{\top}$, not from the sensor origin. The encoder angle $\epsilon = \theta + \beta_{\lfloor v \rceil}$ depends on the unknown row and azimuth, so it is found by a fixed-point iteration (Algorithm~\ref{alg:proj}, four iterations starting from $\epsilon = \operatorname{atan2}(y, x)$).
 \end{enumerate}
@@ -126,7 +126,7 @@ Note, the computation of the pixel $y=[u,v]^{\top}$ is sub-pixel accurate
 \end{algorithm}
 
 % \subsubsection{Measurement column}
-% The function $c(\mathbf{y})$ of Equation~\eqref{eq:meas_col} maps a sub-pixel location to the firing that measured the nearest pixel, by undoing the destagger shift of that pixel's row (Algorithm~\ref{alg:meas_col}). The firing time then follows from the per-column time table $t_{B,c}$, and the sensor motion from $\mathbf{T}^{B}_{c}$. Together, $f$ and $c$ form the fixed-point pass $g_i(c) = c\left(f\left(\mathbf{T}^{B}_{c}\,\mathbf{q}_i\right)\right)$ of Equation~\eqref{eq:fixed_point}: $f$ finds where scan $B$ sees the re-distorted point, and $c$ gives the firing whose transform is used in the next pass.
+% The function $c(\mathbf{y})$ of Equation~\eqref{eq:meas_col} maps a sub-pixel location to the firing that measured the nearest pixel, by undoing the destagger shift of that pixel's row (Algorithm~\ref{alg:meas_col}). The firing time then follows from the per-column time table $t_{B,c}$, and the sensor motion from $\mathbf{T}^{B}_{c}$. Together, $f$ and $c$ form one pass of Equation~\eqref{eq:iteration}: $f$ finds where scan $B$ sees the re-distorted point, and $c$ gives the firing whose transform is used in the next pass.
 
 % \begin{algorithm}[h]
 % \caption{Measurement column $c(\mathbf{y})$, Equation~\eqref{eq:meas_col} (\texttt{OusterModel.meas\_col})}
@@ -144,8 +144,9 @@ The lidar odometry estimates a continuous-time trajectory $\{\mathbf{T}_{ri}(t),
 \begin{equation}
     \dot{\mathbf{T}}_{ri}(t) = \bm{\varpi}^{\wedge}\mathbf{T}_{ri}(t).
 \end{equation}
-For $t \in [t_k, t_{k+1}]$, with $\tau = t - t_k$ and $\Delta = t_{k+1} - t_k$, the pose is interpolated as
+For $t \in [t_k, t_{k+1}]$, with $\tau = t - t_k$ and $\Delta t = t_{k+1} - t_k$, the pose is interpolated as
 \begin{equation}
+    \label{eq:traj_interp}
 \begin{split}
     \bm{\xi}_{k+1,k} &= \ln\left(\mathbf{T}_{k+1}\mathbf{T}_k^{-1}\right)^{\vee}, \qquad
     \bm{\gamma}_{k+1} = \mathcal{J}^{-1}(\bm{\xi}_{k+1,k})\,\bm{\varpi}_{k+1}, \\
@@ -156,16 +157,22 @@ For $t \in [t_k, t_{k+1}]$, with $\tau = t - t_k$ and $\Delta = t_{k+1} - t_k$, 
 with the $2\times2$ coefficient matrices
 \begin{equation}
 \begin{split}
-    \bm{\Omega}(\tau) &= \mathbf{Q}(\tau)\,\bm{\Phi}(\Delta - \tau)^{\top}\mathbf{Q}(\Delta)^{-1}, \qquad
-    \bm{\Lambda}(\tau) = \bm{\Phi}(\tau) - \bm{\Omega}(\tau)\,\bm{\Phi}(\Delta), \\
+    \bm{\Omega}(\tau) &= \mathbf{Q}(\tau)\,\bm{\Phi}(\Delta t- \tau)^{\top}\mathbf{Q}(\Delta t)^{-1}, \qquad
+    \bm{\Lambda}(\tau) = \bm{\Phi}(\tau) - \bm{\Omega}(\tau)\,\bm{\Phi}(\Delta t), \\
     \mathbf{Q}(\tau) &= \begin{bmatrix} \tau^3/3 & \tau^2/2 \\ \tau^2/2 & \tau \end{bmatrix}, \qquad
     \bm{\Phi}(\tau) = \begin{bmatrix} 1 & \tau \\ 0 & 1 \end{bmatrix}.
 \end{split}
 \end{equation}
 Outside the knots, the trajectory is extrapolated with the velocity of the nearest knot,
 \begin{equation}
+    \label{eq:traj_extrap}
     \mathbf{T}_{ri}(t) = \exp\left((t - t_k)\bm{\varpi}_k^{\wedge}\right)\mathbf{T}_k.
 \end{equation}
+Equations~\eqref{eq:traj_interp}--\eqref{eq:traj_extrap} are the interpolation and extrapolation of the STEAM constant-velocity trajectory interface, so \textcolor{blue}{$\mathbf{T}_{ri}(t)$} and \textcolor{blue}{$\bm{\varpi}(t)$} are what the STEAM pose and velocity interpolators return. The frame $i$ here is the odometry (map) frame, called $m$ in the code.
+\begin{itemize}
+    \item vtr (C++ STEAM, \texttt{odometry\_icp\_module.cpp}): \texttt{T\_rintp\_m\_eval}, from \\ \texttt{trajectory->getPoseInterpolator(t)}.
+    \item Python port (\texttt{core/odometry\_icp.py}): \texttt{T\_rc\_m}, from \texttt{sample\_trajectory}, which evaluates the same equations for all $W$ column times at once ($\sim$10$\times$ faster than one pysteam interpolator per column). It agrees with pysteam's pose and velocity interpolators to $\sim$10$^{-14}$ (checked in \texttt{tests/test\_trajectory.py}).
+\end{itemize}
 
 \subsubsection{Sensor pose and relative sensor motion}
 We write the time-dependent sensor pose compactly as
@@ -189,9 +196,10 @@ Evaluating Equation~\eqref{eq:rel_pose} at every column firing time gives, for e
     \mathbf{T}^{A}_{c} \triangleq \mathbf{T}(t_{A,c}, t_A), \qquad
     \mathbf{T}^{B}_{c} \triangleq \mathbf{T}(t_{B,c}, t_B), \qquad c = 0, \ldots, W-1.
 \end{equation}
-The superscript names the scan and the subscript the measurement column. The stamp is the firing time of the first column, so $\mathbf{T}^{A}_{0} = \mathbf{I}$. For a constant velocity $\bm{\varpi}_s$ in the sensor frame, $\mathbf{T}^{A}_{c} = \exp\left((t_{A,c} - t_A)\,\bm{\varpi}_s^{\wedge}\right)$, the same model as the motion-compensated RANSAC of Section~1.
+The superscript names the scan and the subscript the measurement column. The stamp is the firing time of the first column, so $\mathbf{T}^{A}_{0} = \mathbf{I}$. Each $\mathbf{T}^{A}_{c}$ is evaluated from the interpolated trajectory (Equations~\eqref{eq:traj_interp}--\eqref{eq:traj_extrap}) at the column's own firing time. The odometry stores the $W=1024$ transforms with each scan (\texttt{col\_T\_sc\_s}), and removing or re-applying the motion distortion (Section~\ref{sec:mdist}) uses them directly. 
 
 \subsection{Removing and Re-Applying the Motion Distortion}
+\label{sec:mdist}
 Pixel $i$ of scan $A$, with $\mathbf{z}_i = [u_i, v_i, \rho_i]^{\top}$, is measured in the sensor frame at its own firing time, $\mathbf{p}_i^{A,c_i} = f^{-1}(\mathbf{z}_i)$ in $\mathcal{F}_{A,c_i}$, with $c_i = c(\mathbf{y}_i)$. Removing the motion distortion (undistorting) expresses it in the single rigid frame of the scan stamp,
 \begin{equation}
     \label{eq:mdist}
@@ -220,30 +228,34 @@ Pixel $i$ of $A$ is first moved into the stamp frame of $B$,
 Scan $B$ did not see $\mathbf{q}_i$ from $\mathcal{F}_{B}$, but from $\mathcal{F}_{B,c}$, where $c$ is the measurement column that fired towards the point. The predicted pixel in $B$ is
 \begin{equation}
     \label{eq:pred_pixel}
-    \boxed{\;\hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{T}_{BA}\,\mathbf{p}_i^{A}\right)
-    = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{T}_{BA}\left(\mathbf{T}^{A}_{c_i}\right)^{-1} f^{-1}(\mathbf{z}_i)\right)\;}
+    \boxed{\;\hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{T}_{BA}\,\mathbf{p}_i^{A}\right)\;}
 \end{equation}
-Reading from right to left: back-project the pixel of $A$ (in $\mathcal{F}_{A,c_i}$), undistort it with the motion of $A$ (to $\mathcal{F}_{A}$), apply the ICP-refined relative pose (to $\mathcal{F}_{B}$), re-distort it with the motion of $B$ (to $\mathcal{F}_{B,c^{\star}}$), and project into the raw image $B$.
+Reading from right to left: apply the ICP-refined relative pose to the undistorted point of $A$ (from $\mathcal{F}_{A}$ to $\mathcal{F}_{B}$), re-distort it with the motion of $B$ (to $\mathcal{F}_{B,c^{\star}}$), and project into the raw image $B$.
+
+To make the whole chain from the raw pixel of $A$ explicit, substituting Equation~\eqref{eq:mdist} gives
+\begin{equation}
+    \label{eq:pred_pixel_full}
+    \hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{T}_{BA}\left(\mathbf{T}^{A}_{c_i}\right)^{-1} f^{-1}(\mathbf{z}_i)\right),
+\end{equation}
+i.e., back-project the pixel of $A$ (in $\mathcal{F}_{A,c_i}$) and undistort it with the motion of $A$ (to $\mathcal{F}_{A}$) before the steps above. \textbf{Note:} Equation~\eqref{eq:pred_pixel_full} only shows the relationship; the two right-most steps are never computed when building the pairs. Every pixel of the organized point cloud published by the driver (\texttt{/ouster/points}) already comes with its 3D point $\mathbf{p}_i^{A,c_i}$, so $f^{-1}$ is not evaluated at all. The odometry run undistorts these points once, with Equation~\eqref{eq:mdist}, and stores $\mathbf{p}_i^{A}$ for every pixel (\texttt{xyz\_undist}). The pixel correspondences therefore start from the stored pair $(\mathbf{z}_i, \mathbf{p}_i^{A})$ and evaluate only Equation~\eqref{eq:pred_pixel}: the relative pose, the re-distortion with the motion of $B$, and the projection $f$.
 
 \subsubsection{The circular dependency and the fixed point}
-The column $c^{\star}$ depends on where the point lands, and where the point lands depends on $c^{\star}$. Writing one pass as
-\begin{equation}
-    g_i(c) = c\left(f\left(\mathbf{T}^{B}_{c}\,\mathbf{q}_i\right)\right),
-\end{equation}
-the column we look for satisfies
+Equation~\eqref{eq:pred_pixel} cannot be evaluated directly, because the predicted pixel and the measurement column depend on each other. The pixel depends on the column, through the sensor pose at the column's firing time; and the column depends on the pixel, through Equation~\eqref{eq:meas_col}:
 \begin{equation}
     \label{eq:fixed_point}
-    c^{\star} = g_i(c^{\star}).
+    \hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{q}_i\right), \qquad
+    c^{\star} = c\left(\hat{\mathbf{y}}_j\right).
 \end{equation}
-This is the physical condition that the sensor was at $\mathcal{F}_{B,c^{\star}}$ at the moment its beam swept across the point. Any other $c$ is self-contradictory: it assumes the sensor pose at $t_{B,c}$, while the projection says the point was hit at $t_{B,g_i(c)}$.
+Both have to hold at the same time. This is the physical condition that the sensor was at $\mathcal{F}_{B,c^{\star}}$ at the moment its beam swept across the point. Any other column is self-contradictory: re-distorting with $\mathbf{T}^{B}_{c}$ assumes the point was hit at $t_{B,c}$, but the pixel it lands on was measured by column $c(\hat{\mathbf{y}}_j) \ne c$, at a different time.
 
-We solve Equation~\eqref{eq:fixed_point} by fixed-point iteration,
+We solve Equation~\eqref{eq:fixed_point} by alternating between the two relations,
 \begin{equation}
     \label{eq:iteration}
-    c^{(k+1)} = g_i\left(c^{(k)}\right), \qquad
+    \hat{\mathbf{y}}^{(k)} = f\left(\mathbf{T}^{B}_{c^{(k)}}\,\mathbf{q}_i\right), \qquad
+    c^{(k+1)} = c\left(\hat{\mathbf{y}}^{(k)}\right), \qquad
     c^{(0)} = c\left(f(\mathbf{q}_i)\right),
 \end{equation}
-i.e., the initial column is the one $\mathbf{q}_i$ projects to without any motion. Two details matter. First, every pass re-distorts the original $\mathbf{q}_i$, never the point of the previous pass, because $\mathbf{T}^{B}_{c}$ only applies to points in $\mathcal{F}_{B}$. Second, the projected column $u$ is an image column and has to be converted to a measurement column with Equation~\eqref{eq:meas_col} before its firing time can be used.
+i.e., the initial column is the one $\mathbf{q}_i$ projects to without any motion. Two details matter. First, every pass re-distorts the original $\mathbf{q}_i$, never the point of the previous pass, because $\mathbf{T}^{B}_{c}$ only applies to points in $\mathcal{F}_{B}$. Second, the projected pixel gives an image column $\hat{u}$, which Equation~\eqref{eq:meas_col} converts to a measurement column (using the row $\hat{v}$) before its firing time can be used.
 
 % \textcolor{blue}{\textbf{Note:} the iteration is a strong contraction. A column error $\delta c$ is a time error $\delta t = \delta c\, T_{\mathrm{scan}}/W$, which moves the predicted azimuth by about $(|\omega_z| + v_{\perp}/\rho)\,\delta t$, where $\omega_z$ is the yaw rate, $v_{\perp}$ the speed perpendicular to the beam, and $\rho$ the range. In columns, this is
 % \begin{equation}
@@ -261,11 +273,11 @@ After the last pass, the final projection gives the sub-pixel match $\hat{\mathb
 where the difference is \textbf{not} taken modulo $W$, so a jump across the seam ($\approx W$ columns, a full scan apart in time) is not mistaken for convergence.
 
 \subsubsection{The azimuth seam}
-The sensor fires the columns in time order, $c = 0 \rightarrow W-1$. Column $W-1$ is next to column $0$ in azimuth, but they fire almost a full scan apart, so $\mathbf{T}^{B}_{0}$ and $\mathbf{T}^{B}_{W-1}$ differ by one scan of motion. Therefore $g_i(c)$ jumps at the seam. In a band of width
+The sensor fires the columns in time order, $c = 0 \rightarrow W-1$. Column $W-1$ is next to column $0$ in azimuth, but they fire almost a full scan apart, so $\mathbf{T}^{B}_{0}$ and $\mathbf{T}^{B}_{W-1}$ differ by one scan of motion. Therefore the column returned by one pass of Equation~\eqref{eq:iteration} jumps when $c^{(k)}$ crosses the seam. In a band of width
 \begin{equation}
     \Delta_{\mathrm{seam}} \approx W\kappa = \frac{W\,T_{\mathrm{scan}}\left(|\omega_z| + v_{\perp}/\rho\right)}{2\pi} \quad \text{columns}
 \end{equation}
-the fixed-point equation has an unusual number of solutions:
+Equation~\eqref{eq:fixed_point} has an unusual number of solutions:
 \begin{itemize}
     \item \textbf{Overlap} (the sweep covers more than $360^{\circ}$): two fixed points, $c^{\star} \approx 0$ and $c^{\star} \approx W-1$. Scan $B$ saw the surface twice, and both are valid observations.
     \item \textbf{Gap} (the sweep covers less than $360^{\circ}$): no fixed point. Scan $B$ never measured this direction, and the iteration alternates between $c \approx 0$ and $c \approx W-1$.
@@ -316,7 +328,7 @@ On simulated scans with known motion ($1.1$--$1.9$\,m/s, up to $0.7$\,rad/s, $1$
 
 \begin{table}[h]
 \centering
-\caption{Symbols and their names in the implementation (\texttt{make\_pairs.py}, \texttt{motion\_distortion.py}, \texttt{ouster\_model.py}).}
+\caption{Symbols and their names in the implementation (\texttt{make\_pairs.py}, \texttt{core/motion\_distortion.py}, \texttt{core/ouster\_model.py}).}
 \label{tab:pixel_match_symbols}
 \footnotesize
 \begin{tabular}{ll}
