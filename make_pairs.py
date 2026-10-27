@@ -137,9 +137,9 @@ def predict_in_dst(q, dst, model, start_cols, num_iters):
     """Where dst's (moving) sensor saw the points q (dst sensor frame at dst's stamp).
     Re-applies dst's motion distortion; which column (and so which transform) applies depends on
     where the point lands, so iterate from start_cols (N,): re_mdist -> project -> column -> ...
-    Returns the sub-pixel (row, col), the predicted range, and |measured - predicted| range at
-    that pixel (inf if outside the FOV, dst has no return there, or the column did not converge,
-    e.g. a point in the gap between the end and the start of dst's sweep)."""
+    Returns the sub-pixel (row, col), the predicted range, |measured - predicted| range at that
+    pixel (inf if outside the FOV, dst has no return there, or the column did not converge, e.g. a
+    point in the gap between the end and the start of dst's sweep), and whether it converged."""
     H, W = model.H, model.W
     # a point on a pixel border may flip between two rows, whose measurement columns differ by up
     # to the shift spread (a few ms apart); a jump across the seam (~W columns, a full scan) is not
@@ -160,7 +160,7 @@ def predict_in_dst(q, dst, model, start_cols, num_iters):
     col_int = np.mod(np.rint(col).astype(np.int64), W)
     has_return = (row > -0.5) & (row < H - 0.5) & dst["valid"][row_int, col_int] & converged
     range_residual = np.where(has_return, np.abs(dst["range"][row_int, col_int] - r_pred), np.inf)
-    return row, col, r_pred, range_residual
+    return row, col, r_pred, range_residual, converged
 
 
 def compute_correspondences(src, dst, T_dst_src, model, cfg):
@@ -176,7 +176,7 @@ def compute_correspondences(src, dst, T_dst_src, model, cfg):
 
     # start from the column q projects to without motion: within a few columns of the answer
     start = model.meas_col(*model.project(q))
-    row, col, r_pred, residual = predict_in_dst(q, dst, model, start, cfg.re_mdist_iters)
+    row, col, r_pred, residual, _ = predict_in_dst(q, dst, model, start, cfg.re_mdist_iters)
 
     # Near the azimuth seam (first / last measurement columns) a point can be seen at the end or
     # at the start of dst's scan (the two are ~one scan of motion apart), so also iterate from the
@@ -185,7 +185,7 @@ def compute_correspondences(src, dst, T_dst_src, model, cfg):
     seam = near_first | (start >= W - cfg.seam_margin)
     idx = np.nonzero(seam)[0]
     other_end = np.where(near_first[idx], W - 1, 0)
-    row2, col2, r_pred2, residual2 = predict_in_dst(q[idx], dst, model, other_end, cfg.re_mdist_iters)
+    row2, col2, r_pred2, residual2, _ = predict_in_dst(q[idx], dst, model, other_end, cfg.re_mdist_iters)
     second = residual2 < residual[idx]
     sel = idx[second]
     row[sel], col[sel], r_pred[sel], residual[sel] = \
@@ -213,6 +213,73 @@ def cycle_check(corr_ab, corr_ba, max_err):
     err = np.hypot(back[:, 0] - rows, d_col)
     keep[rows, cols] = err <= max_err  # NaN (no way back) -> False
     return keep
+
+
+def explain_no_match(src, dst, T_dst_src, row, col, model, cfg, names=("A", "B")):
+    """Why pixel (row, col) of src has no correspondence in dst: the steps of
+    compute_correspondences and cycle_check, recomputed for one pixel.
+    Returns (reason, pred): pred = (row, col, range) predicted in dst, or None if the point was not
+    projected. Gives "passes every check" for a pixel that does have a correspondence."""
+    s, d = names
+    H, W = model.H, model.W
+    reason, pred = one_way_check(src, dst, T_dst_src, row, col, model, cfg, d)
+    if reason is not None:
+        return reason, pred
+
+    # the one-way checks passed, so it depends on the cycle check, which (as in match_frames) uses
+    # the way back before that one was cycle-checked itself
+    r_n, c_n = int(np.clip(np.rint(pred[0]), 0, H - 1)), int(np.rint(pred[1])) % W
+    back_reason, back = one_way_check(dst, src, np.linalg.inv(T_dst_src), r_n, c_n, model, cfg, s)
+    if back_reason is not None:
+        return f"cycle check: {d}'s pixel at the match has no correspondence back in {s} ({back_reason})", pred
+    err = np.hypot(back[0] - row, (back[1] - col + W / 2) % W - W / 2)
+    if cfg.cycle_tol >= 0 and not err <= cfg.cycle_tol:
+        return f"cycle check: {s} -> {d} -> {s} comes back {err:.2f} px away (> cycle_tol = {cfg.cycle_tol} px)", pred
+    return "passes every check", pred
+
+
+def one_way_check(src, dst, T_dst_src, row, col, model, cfg, d="B"):
+    """compute_correspondences for one pixel. Returns (reason it fails or None, pred = predicted
+    (row, col, range) in dst or None)."""
+    H, W = model.H, model.W
+    rng = src["range"][row, col]
+    if rng <= 0:
+        return "no return at this pixel", None
+    if rng <= cfg.corr_min_range:
+        return f"too close: range {rng:.2f} m <= corr_min_range = {cfg.corr_min_range} m", None
+
+    p = src["xyz_undist"][row, col].astype(np.float64)
+    q = (T_dst_src[:3, :3] @ p + T_dst_src[:3, 3])[None]
+    start = model.meas_col(*model.project(q))
+    cand = predict_in_dst(q, dst, model, start, cfg.re_mdist_iters)
+    if start[0] < cfg.seam_margin or start[0] >= W - cfg.seam_margin:
+        other_end = np.array([W - 1 if start[0] < cfg.seam_margin else 0])
+        cand2 = predict_in_dst(q, dst, model, other_end, cfg.re_mdist_iters)
+        if cand2[3][0] < cand[3][0]:
+            cand = cand2
+    r, c, r_pred, residual, converged = (x[0] for x in cand)
+    pred = (r, c, r_pred)
+
+    if not converged:
+        return (f"the column did not converge: the point falls in the gap between the end and the "
+                f"start of {d}'s sweep (azimuth seam), {d} never measured this direction"), pred
+    if not -0.5 < r < H - 0.5:
+        return f"outside {d}'s vertical field of view (the predicted row is above or below the image)", pred
+    r_n, c_n = int(np.clip(np.rint(r), 0, H - 1)), int(np.rint(c)) % W
+    if not dst["valid"][r_n, c_n]:
+        return f"{d} has no return at the predicted pixel (e.g. sky, absorbing or mirror-like surface)", pred
+    measured = dst["range"][r_n, c_n]
+    tol = cfg.range_abs_tol + cfg.range_rel_tol * r_pred
+    if residual >= tol:
+        if measured < r_pred:
+            near = (f"; closer than corr_min_range = {cfg.corr_min_range} m, so most likely the robot's own body"
+                    if measured <= cfg.corr_min_range else "")
+            return (f"occluded in {d}: {d} measured a closer surface, {measured:.2f} m vs {r_pred:.2f} m "
+                    f"predicted (|diff| {residual:.2f} m > {tol:.2f} m){near}"), pred
+        return (f"range check failed: {d} measured a farther surface, {measured:.2f} m vs {r_pred:.2f} m "
+                f"predicted (|diff| {residual:.2f} m > {tol:.2f} m): depth edge, moving object, "
+                f"or a surface {d} did not see"), pred
+    return None, pred
 
 
 # ---------------- output helpers ----------------

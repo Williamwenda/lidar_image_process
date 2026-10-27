@@ -24,7 +24,7 @@ cd accelerated_features/lidar_intensity_data_process
 python3 run_odometry.py         # 1. odometry -> outputs/<FOLDER_NAME>/odometry/
 python3 make_pairs.py           # 2. image pairs -> outputs/<FOLDER_NAME>/pairs/
 python3 visualize_odometry.py   # trajectory, map, two aligned frames -> outputs/<FOLDER_NAME>/odometry/vis/
-python3 visualize_pairs.py      # match any two frames (FRAME_A, FRAME_B) and show them in 3-D
+python3 visualize_pairs.py      # match any two frames (FRAME_A, FRAME_B), click pixels to inspect the matches
 python3 load_data.py            # print what is inside the saved files
 ```
 
@@ -53,7 +53,7 @@ stop instead of overwriting results already in it.
 | `run_odometry.py` | **Step 1 entry point.** Reads the bag, runs preprocessing → odometry → map update for every scan, saves the frames. |
 | `make_pairs.py` | **Step 2 entry point.** Matches frame pairs: sequential (`frame_gap`, `stride`) or a list of any two frames (`frame_pairs`). `match_frames` / `match_frame_ids` match two arbitrary frames: odometry pose chain as the initial guess, ICP refinement, correspondences, and a notice when the match fails. |
 | `visualize_odometry.py` | Trajectory plot, map rebuilt from the odometry, and two frames aligned by the odometry (Open3D windows + saved files). |
-| `visualize_pairs.py` | Matches two arbitrary frames (`FRAME_A`, `FRAME_B`) and shows the two point clouds side by side: points with a correspondence dark gray, without light gray. Optional 2-D dense-matching views (`PLOT_2D`). |
+| `visualize_pairs.py` | Matches two arbitrary frames (`FRAME_A`, `FRAME_B`) and opens a correspondence inspector: images A and B one above the other; click a pixel in either to draw a line to its sub-pixel match, and see the local patches, flow, ranges, cycle error and 3-D error. Matches can also be listed by hand (`PIXELS_A`) or sampled (`NUM_RANDOM`). Optional 3-D view of the two point clouds (`PLOT_3D`). |
 | `load_data.py` | Prints the content (keys, shapes, ranges) of saved frame and pair files. |
 | `core/odometry_icp.py` | `OdometryICP`: the port of vtr's odometry (knots, priors, two-stage ICP loop, convergence, prior for the next scan). `sample_trajectory` evaluates the trajectory at the 1024 column times. |
 | `core/cost_terms.py` | pysteam cost terms: batched point-to-plane (points grouped in time bins share one interpolated pose), and the joint 12x12 pose + velocity prior. |
@@ -108,7 +108,7 @@ make_pairs.py
   - `corr_AB` (H, W, 2): (row, col) in B for every pixel of A, NaN = no match. `corr_BA` is the reverse.
   - `corr_range_AB/BA`: range of the matched point [m], useful to filter or weight matches.
   - `T_AB` (refined), `T_AB_odom`, stamps, ICP fitness / rmse.
-- `vis/match3d_<A>_<B>.ply` / `.png` and `vis/match2d_<A>_<B>.png`: from `visualize_pairs.py`.
+- `vis/inspect_<A>_<B>.png` (inspector, `s` saves the current view) and `vis/match3d_<A>_<B>.ply`: from `visualize_pairs.py`.
 - `vis/<A>_<B>.png`: overlay check. Top: A in yellow, B warped into A in blue, so aligned
   structure looks gray. Bottom: A over raw B.
 
