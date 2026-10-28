@@ -10,19 +10,15 @@ goes into frame A with p_A = T_AB @ p_B, T_AB = T_s_m(A) @ inv(T_s_m(B)).
 
 Run:  python visualize_odometry.py      (edit the parameters below)
 """
-import os
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
 
 import config
 from make_pairs import icp_points, load_frame, pose_diff, run_icp
 from make_pairs import cfg as pairs_cfg
-
-# make_pairs imports cv2, which points Qt to cv2's own plugins; that breaks matplotlib's Qt backend
-os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH", None)
-import matplotlib.pyplot as plt  # noqa: E402
 
 ######## Parameters (edit by hand) ########
 ODOMETRY_DIR = config.ODOMETRY_DIR   # folder set in config.py

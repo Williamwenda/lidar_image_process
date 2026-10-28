@@ -1,4 +1,4 @@
-\begin{thebibliography}{6}
+\begin{thebibliography}{5}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \providecommand{\urlprefix}{URL }
@@ -27,13 +27,6 @@ Barfoot TD (2024) \emph{State estimation for robotics: Second edition}.
 \newblock
   \url{https://static.ouster.dev/sdk-docs/reference/lidar-scan.html#staggering-and-destaggering}.
 \newblock Accessed: 2026-10-26.
-
-\bibitem[{Pfreundschuh et~al.(2024)Pfreundschuh, Oleynikova, Cadena, Siegwart
-  and Andersson}]{pfreundschuh2024coin}
-Pfreundschuh P, Oleynikova H, Cadena C, Siegwart R and Andersson O (2024)
-  {COIN-LIO}: Complementary intensity-augmented {LiDAR} inertial odometry.
-\newblock In: \emph{2024 IEEE International Conference on Robotics and
-  Automation (ICRA)}. IEEE, pp. 1730--1737.
 
 \bibitem[{Tong et~al.(2014)Tong, Anderson, Dong and D.~Barfoot}]{tong2014pose}
 Tong CH, Anderson S, Dong H and D~Barfoot T (2014) Pose interpolation for

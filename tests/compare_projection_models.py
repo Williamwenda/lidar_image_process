@@ -7,8 +7,8 @@ error of the projection model. Models compared:
   1. spherical      : uniform elevation spacing over the FOV, no beam origin offset (eq. 1, r = 0)
   2. coin_lio       : as COIN-LIO implements it: measured beam altitudes (interpolated),
                       beam origin offset r, one constant azimuth offset for all beams
-  3. coin_lio + dk  : coin_lio plus the per-row azimuth correction delta_k (= our model, one pass)
-  4. ouster         : OusterModel.project (fixed-point iteration on the encoder angle)
+  3. coin_lio + dk  : coin_lio plus the per-row azimuth correction delta_k
+  4. ouster         : OusterModel.project (beam origin at the encoder angle of the measurement column)
 The column convention u = W (1 - theta / 2 pi) is shared by all models (a constant column offset
 is calibration, not the model).
 Run:  python tests/compare_projection_models.py      (reads one scan from the bag)
@@ -82,7 +82,7 @@ def main():
         "spherical": project_spherical(p, model),
         "coin_lio": project_coin_lio(p, model),
         "coin_lio + dk": project_coin_lio(p, model, per_row_delta=True),
-        "ouster": model.project(p),
+        "ouster": model.project(p, model.meas_col_of_pixel[rows, cols]),
     }
 
     errors = {}

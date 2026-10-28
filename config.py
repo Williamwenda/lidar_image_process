@@ -4,7 +4,13 @@ from pathlib import Path
 ######## Edit by hand ########
 BAG = "/home/wenda/data/lidar_intensity/asrl_data/ouster_data/rosbag2_2025_05_21-11_02_59" # parking
 # BAG = "/home/wenda/data/lidar_intensity/asrl_data/ouster_data/rosbag2_2025_05_21-10_46_12"  # dome
+# BAG = "/home/wenda/data/lidar_intensity/asrl_data/ouster_data/rosbag2_2025_05_21-10_55_31"  # woody
+# BAG = "/home/wenda/data/lidar_intensity/asrl_data/ouster_data/rosbag2_2025_05_21-10_50_27"  # grassy
+
 FOLDER_NAME = "utias_parking"   # results go to outputs/<FOLDER_NAME>/
+# FOLDER_NAME = "utias_dome"   # results go to outputs/<FOLDER_NAME>/
+# FOLDER_NAME = "utias_woody"   # results go to outputs/<FOLDER_NAME>/
+# FOLDER_NAME = "utias_grassy"   # results go to outputs/<FOLDER_NAME>/
 
 ######## Derived paths ########
 OUTPUTS_DIR = Path(__file__).resolve().parent / "outputs" / FOLDER_NAME

@@ -37,7 +37,6 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-import cv2
 import numpy as np
 import open3d as o3d
 from scipy.spatial.transform import Rotation
@@ -80,7 +79,6 @@ cfg = SimpleNamespace(
 
     # output
     rotate180=True,       # rotate images + correspondences (upside-down mount on the Warthog)
-    vis_every=10,         # write an overlay image every N pairs (0 = off)
 )
 
 
@@ -148,12 +146,12 @@ def predict_in_dst(q, dst, model, start_cols, num_iters):
     c = start_cols
     converged = np.ones(len(q), dtype=bool)
     for _ in range(num_iters):
-        row, col = model.project(re_mdist(q, c, dst["col_T_sc_s"]))
+        row, col = model.project(re_mdist(q, c, dst["col_T_sc_s"]), c)
         c_new = model.meas_col(row, col)
         converged = np.abs(c_new - c) <= col_tol
         c = c_new
     p = re_mdist(q, c, dst["col_T_sc_s"])
-    row, col = model.project(p)
+    row, col = model.project(p, c)
     r_pred = np.linalg.norm(p, axis=1)
 
     row_int = np.clip(np.rint(row).astype(np.int64), 0, H - 1)
@@ -174,8 +172,8 @@ def compute_correspondences(src, dst, T_dst_src, model, cfg):
     xyz = src["xyz_undist"][use].astype(np.float64)
     q = xyz @ T_dst_src[:3, :3].T + T_dst_src[:3, 3]  # dst sensor frame at dst's stamp
 
-    # start from the column q projects to without motion: within a few columns of the answer
-    start = model.meas_col(*model.project(q))
+    # start from the column whose encoder angle points at q: within ~12 columns of the answer
+    start = model.azimuth_col(q)
     row, col, r_pred, residual, _ = predict_in_dst(q, dst, model, start, cfg.re_mdist_iters)
 
     # Near the azimuth seam (first / last measurement columns) a point can be seen at the end or
@@ -250,7 +248,7 @@ def one_way_check(src, dst, T_dst_src, row, col, model, cfg, d="B"):
 
     p = src["xyz_undist"][row, col].astype(np.float64)
     q = (T_dst_src[:3, :3] @ p + T_dst_src[:3, 3])[None]
-    start = model.meas_col(*model.project(q))
+    start = model.azimuth_col(q)
     cand = predict_in_dst(q, dst, model, start, cfg.re_mdist_iters)
     if start[0] < cfg.seam_margin or start[0] >= W - cfg.seam_margin:
         other_end = np.array([W - 1 if start[0] < cfg.seam_margin else 0])
@@ -292,30 +290,6 @@ def rotate180_corr(corr, H, W):
     out[..., 0] = H - 1 - out[..., 0]
     out[..., 1] = np.mod(W - 1 - out[..., 1], W)
     return out
-
-
-def to_u8(img16):
-    return (img16 >> 8).astype(np.uint8)
-
-
-def warp_to_src(img_dst, corr):
-    """Sample the dst image at the correspondences of every src pixel (bilinear, wrapping in azimuth)."""
-    has_match = np.isfinite(corr[..., 0])
-    map_row = np.where(has_match, corr[..., 0], -1).astype(np.float32)
-    map_col = np.where(has_match, corr[..., 1], -1).astype(np.float32)
-    warped = cv2.remap(img_dst, map_col, map_row, cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
-    warped[~has_match] = 0
-    return warped
-
-
-def draw_overlay(sig_a, sig_b, corr_ab, row_scale=3):
-    """Top: A (yellow) over B warped into A via corr_AB (blue) -> aligned structure is gray.
-    Bottom: A over raw B for reference. Yellow-only regions have no valid correspondence."""
-    H, W = sig_a.shape
-    up = lambda x: cv2.resize(to_u8(x), (W, H * row_scale), interpolation=cv2.INTER_NEAREST)
-    a, b, b_warped = up(sig_a), up(sig_b), up(warp_to_src(sig_b, corr_ab))
-    bar = np.full((10, W, 3), 255, np.uint8)
-    return np.vstack([np.dstack([b_warped, a, a]), bar, np.dstack([b, a, a])])
 
 
 def pose_diff(T1, T2):
@@ -378,7 +352,7 @@ def match_frame_ids(frame_a, frame_b, cfg=cfg):
     return pair, message
 
 
-def save_pair(pair, out_dir, model, cfg, save_vis=False):
+def save_pair(pair, out_dir, model, cfg):
     """Save a pair as <out_dir>/pairs/<frame A>_<frame B>.npz (rotated 180 deg if cfg.rotate180)."""
     out_dir = Path(out_dir)
     name = f"{int(pair['frame_A']):06d}_{int(pair['frame_B']):06d}"
@@ -390,9 +364,6 @@ def save_pair(pair, out_dir, model, cfg, save_vis=False):
         data["corr_AB"] = rotate180_corr(data["corr_AB"], model.H, model.W)
         data["corr_BA"] = rotate180_corr(data["corr_BA"], model.H, model.W)
     np.savez_compressed(out_dir / "pairs" / f"{name}.npz", **data, rotated180=cfg.rotate180)
-    if save_vis:
-        cv2.imwrite(str(out_dir / "vis" / f"{name}.png"),
-                    draw_overlay(data["signal_A"], data["signal_B"], data["corr_AB"]))
     return name
 
 
@@ -402,7 +373,6 @@ def main(cfg):
     if any((out_dir / "pairs").glob("*.npz")):
         raise FileExistsError(f"{out_dir / 'pairs'} already has pairs: delete them or change out_dir")
     (out_dir / "pairs").mkdir(parents=True, exist_ok=True)
-    (out_dir / "vis").mkdir(exist_ok=True)
     model = load_model(cfg.odometry_dir)
     files = list_frames(cfg.odometry_dir)
     print(f"{len(files)} odometry frames in {cfg.odometry_dir}")
@@ -419,7 +389,7 @@ def main(cfg):
         if pair is None:
             continue
         pair.update(frame_A=frame_a, frame_B=frame_b)
-        save_pair(pair, out_dir, model, cfg, save_vis=cfg.vis_every > 0 and n_pairs % cfg.vis_every == 0)
+        save_pair(pair, out_dir, model, cfg)
         n_pairs += 1
         if cfg.max_pairs is not None and n_pairs >= cfg.max_pairs:
             break

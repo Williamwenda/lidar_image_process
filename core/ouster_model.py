@@ -34,27 +34,31 @@ class OusterModel:
         cols = np.arange(self.W)[None, :]
         self.meas_col_of_pixel = np.mod(cols - self.shift[rows], self.W)
 
-    def project(self, p):
-        """(N, 3) points in the os_lidar frame -> fractional (row, col), each (N,).
-        Inverts the Ouster beam model; re-projecting the driver's own points gives < 1e-3 px error."""
+    def project(self, p, meas_col):
+        """(N, 3) points in the os_lidar frame, seen from measurement columns meas_col (N,)
+        -> fractional (row, col), each (N,). Inverts the Ouster beam model: the beam origin sits at
+        the encoder angle of meas_col. Re-projecting the driver's own points with their measurement
+        column gives < 1e-4 px error."""
         x, y, z = p[:, 0], p[:, 1], p[:, 2]
-        rows = np.arange(self.H, dtype=np.float64)
-        encoder = np.arctan2(y, x)
-        for _ in range(4):  # fixed-point iteration on the encoder angle (beam origin offset)
-            dx = x - self.n * np.cos(encoder)
-            dy = y - self.n * np.sin(encoder)
-            theta = np.arctan2(dy, dx)
-            phi = np.arctan2(z, np.hypot(dx, dy))
-            # altitude angles are descending -> negate for np.interp; extrapolate linearly outside the FOV
-            row = np.interp(-phi, -self.alt, rows)
-            above = phi > self.alt[0]
-            below = phi < self.alt[-1]
-            row[above] = -(phi[above] - self.alt[0]) / (self.alt[0] - self.alt[1])
-            row[below] = (self.H - 1) + (self.alt[-1] - phi[below]) / (self.alt[-2] - self.alt[-1])
-            row_int = np.clip(np.rint(row).astype(np.int64), 0, self.H - 1)
-            encoder = theta + self.az[row_int]
+        encoder = 2.0 * np.pi * (1.0 - meas_col / self.W)
+        dx = x - self.n * np.cos(encoder)
+        dy = y - self.n * np.sin(encoder)
+        theta = np.arctan2(dy, dx)
+        phi = np.arctan2(z, np.hypot(dx, dy))
+        # altitude angles are descending -> negate for np.interp; extrapolate linearly outside the FOV
+        row = np.interp(-phi, -self.alt, np.arange(self.H, dtype=np.float64))
+        above = phi > self.alt[0]
+        below = phi < self.alt[-1]
+        row[above] = -(phi[above] - self.alt[0]) / (self.alt[0] - self.alt[1])
+        row[below] = (self.H - 1) + (self.alt[-1] - phi[below]) / (self.alt[-2] - self.alt[-1])
+        row_int = np.clip(np.rint(row).astype(np.int64), 0, self.H - 1)
         col = np.mod(self.W * (1.0 - (theta - self.delta[row_int]) / (2.0 * np.pi)), self.W)
         return row, col
+
+    def azimuth_col(self, p):
+        """Measurement column whose encoder angle points at the azimuth of the (N, 3) points p.
+        Ignores the beam azimuth offsets, so it is within ~12 columns of the column that measures p."""
+        return np.mod(np.rint(self.W * (1.0 - np.arctan2(p[:, 1], p[:, 0]) / (2.0 * np.pi))).astype(np.int64), self.W)
 
     def meas_col(self, row, col):
         """Nearest measurement column for fractional pixel coordinates."""

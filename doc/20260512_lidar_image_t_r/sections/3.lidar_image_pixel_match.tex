@@ -4,6 +4,7 @@
 In this section, we derive the ground-truth pixel correspondences between two lidar intensity images. Every pixel of a lidar image is one 3D lidar point, so a pixel of image $A$ can be lifted to 3D, moved into the second scan $B$, and projected back. The images themselves are never warped or undistorted: a correspondence points to where the surface point really appears in the \textbf{raw}, motion-distorted image $B$. Because the sensor moves during a scan, this requires re-applying the motion distortion of scan $B$, which leads to a small fixed-point problem.
 
 \subsection{Frames and Lidar Image Model}
+\label{sec:image_model}
 We follow the notation of Section~1. We denote the inertial (map) frame, the robot frame, and the lidar sensor frame as $\mathcal{F}_i$, $\mathcal{F}_r$, and $\mathcal{F}_s$, with the fixed extrinsic $\mathbf{T}_{sr}$. The two scans have stamps $t_A$ and $t_B$, and we write $\mathcal{F}_A \equiv \mathcal{F}_{st_A}$ and $\mathcal{F}_B \equiv \mathcal{F}_{st_B}$ for the sensor frames at the stamps. Following~\citet{barfoot2024state}, $\mathbf{T}_{ba}$ maps points from $\mathcal{F}_a$ to $\mathcal{F}_b$, a point expressed in $\mathcal{F}_a$ is written $\mathbf{p}^{a}$, and transforms act on points in homogeneous coordinates, $\mathbf{p}^{b} = \mathbf{T}_{ba}\,\mathbf{p}^{a}$.
 
 The lidar image has $H \times W$ pixels ($128 \times 1024$). We write a pixel as $\mathbf{y} = [u, v]^{\top}$, where $u \in [0, W)$ is the column (azimuth) and $v \in [0, H)$ is the row (elevation, one per beam). The sensor fires one \emph{measurement column} at a time. Since the image is destaggered, pixel $(u, v)$ was measured in the measurement column $c(\mathbf{y})$ given by
@@ -34,59 +35,30 @@ The Ouster driver computes each 3D point from a measurement $\mathbf{z} = [u, v,
 \end{equation}
 The encoder angle comes from the \textbf{measurement} column $c$, not from the image column $u$; using $u$ would rotate the points of our sensor by up to $4.5^{\circ}$ ($\approx 13$\,px). Equation~\eqref{eq:inv_proj} reproduces the driver's points to below $10^{-4}$\,deg, so $f^{-1}(\mathbf{z}_i)$ in Equation~\eqref{eq:mdist} is simply the published point. (The stored range $\|\mathbf{p}\|$ differs from $\rho$ by at most $1.2$\,mm because of $n$.)
 
-%% This part seems not important. 
-\textbf{Why the destaggered image looks like a panorama.} Substituting $c = u - s_v$ into $\theta = \epsilon_c - \beta_v$ gives the azimuth of pixel $(u, v)$,
-\begin{equation}
-    \label{eq:destagger}
-    \theta = 2\pi\left(1 - \frac{u}{W}\right) + \delta_v, \qquad \delta_v = \frac{2\pi s_v}{W} - \beta_v.
-\end{equation}
-The shifts are chosen as $s_v \approx \beta_v W / 2\pi$ (e.g., $\beta_0 = 4.21^{\circ}$ and $s_0 = 12$ columns $= 4.22^{\circ}$), so the residual $\delta_v$ is only $0.01$--$0.03^{\circ}$ ($< 0.1$\,px). An image column is therefore (almost) one azimuth for all rows, but its pixels come from different firings. For example, the pixels of image column $u = 100$ in rows $0$--$3$ were measured in four firings:
-\begin{center}
-\footnotesize
-\begin{tabular}{ccccc}
-\hline
-Row $v$ & $\beta_v$ [deg] & $s_v$ [col] & $\delta_v$ [deg] & $c([100, v]^{\top})$ \\
-\hline
-0 & $\phantom{-}4.21$ & $\phantom{-}12$ & $0.009$ & $88$ \\
-1 & $\phantom{-}1.38$ & $\phantom{-}4$ & $0.026$ & $96$ \\
-2 & $-1.43$ & $-4$ & $0.024$ & $104$ \\
-3 & $-4.23$ & $-12$ & $0.011$ & $112$ \\
-\hline
-\end{tabular}
-\end{center}
-Row $0$ points $4.21^{\circ}$ ahead of the sweep and reaches the azimuth of column $100$ already at firing $88$, while row $3$ points $4.23^{\circ}$ behind and reaches it only at firing $112$. The four pixels are measured up to $24$ firings ($\approx 2.3$\,ms) apart, which is why the firing time must come from $c(\mathbf{y})$.
-
 \subsubsection{Projection model}
-The projection $f(\mathbf{p})$ maps an arbitrary 3D point in the lidar frame, not necessarily a measured one, to a continuous (\textbf{sub-pixel}) location $\mathbf{y} = [u, v]^{\top}$ in the destaggered image. Integer coordinates are pixel centres. The starting point is the spherical projection used by COIN-LIO~\citep{pfreundschuh2024coin},
-\begin{equation}
-    \theta = \operatorname{atan2}(y, x), \qquad \phi = \operatorname{atan2}\Big(z, \sqrt{x^2 + y^2}\Big), \qquad u = W\left(1 - \frac{\theta}{2\pi}\right), \qquad v = \text{row of elevation } \phi.
-\end{equation}
-Our $f(\cdot)$ is the exact inverse of Equation~\eqref{eq:inv_proj}, which adds three corrections to it:
-\begin{enumerate}
-    \item \textbf{Measured beam altitudes.} The altitudes $\alpha_0 > \cdots > \alpha_{H-1}$ ($20.9^{\circ}$ to $-21.8^{\circ}$) are not evenly spaced (gaps of $0.26$--$0.37^{\circ}$), so $v$ is interpolated linearly between the two neighbouring beams, $v = k + (\alpha_k - \phi)/(\alpha_k - \alpha_{k+1})$, and extrapolated outside the field of view. ($\alpha_k$ are the calibrated altitude angles that is provided as the \texttt{beam\_altitude\_angles} array in the \texttt{meta.json} file)
-    \item \textbf{Per-row azimuth residual.} Solving Equation~\eqref{eq:destagger} for $u$ gives $u = [ W\left(1 - (\theta - \delta_{\lfloor v \rceil})/2\pi\right) ] \bmod W$. Note, $\delta_{\lfloor v \rceil}$ can be directly computed from the json file parameter. $\delta_{\lfloor v \rceil} = (\frac{2\pi s_{\lfloor v \rceil}}{W})-\beta_{\lfloor v \rceil}$, where $s_{\lfloor v \rceil}$ is the pixel shift \texttt{pixel\_shift\_by\_row[v]} in pixels and $\beta_{\lfloor v \rceil}$ is the corresponding azimuth offset, \texttt{beam\_azimuth\_angles[v]} in radians.
-    \item \textbf{Beam origin offset.} $\theta$ and $\phi$ are measured from the beam origin $n\,[\cos\epsilon, \sin\epsilon, 0]^{\top}$, not from the sensor origin. The encoder angle $\epsilon = \theta + \beta_{\lfloor v \rceil}$ depends on the unknown row and azimuth, so it is found by a fixed-point iteration (Algorithm~\ref{alg:proj}, four iterations starting from $\epsilon = \operatorname{atan2}(y, x)$).
-\end{enumerate}
-In compact form, with $d_x = x - n\cos\epsilon$ and $d_y = y - n\sin\epsilon$ and iterating on $\epsilon$ to convergence,
+The projection $f(\mathbf{p}; c)$ is the inverse of Equation~\eqref{eq:inv_proj}. It maps a 3D point $\mathbf{p} = [x, y, z]^{\top}$ in the lidar frame, seen from measurement column $c$, to a sub-pixel location $\mathbf{y} = [u, v]^{\top}$ in the destaggered image (integer coordinates are pixel centres). The point does not have to be a measured one:
 \begin{equation}
     \label{eq:proj}
-\begin{split}
-    \theta &= \operatorname{atan2}(d_y, d_x), \qquad \phi = \operatorname{atan2}\Big(z, \sqrt{d_x^2 + d_y^2}\Big),\\  v &= \operatorname{interp}\left(\phi;\, \{\alpha_k\}\right) = k + \dfrac{\alpha_k - \phi}{\alpha_k - \alpha_{k+1}}, \qquad \epsilon = \theta + \beta_{\lfloor v \rceil}, \\
-    \mathbf{y} &= f(\mathbf{p}) = \begin{bmatrix} u \\ v \end{bmatrix}, \qquad
-    u = \left[W\left(1 - \frac{\theta - \delta_{\lfloor v \rceil}}{2\pi}\right)\right] \bmod W.
-\end{split}
-\end{equation}
-Note, for the $k$ in the interpolation formula $v = k + (\alpha_k - \phi)/(\alpha_k - \alpha_{k+1})$, it is the index of the beam immediately above the elevation $\phi$. We need to look through the look up table of \texttt{beam\_altitude\_angles} to find it.
-By construction, $f\left(f^{-1}(\mathbf{z})\right) = [u, v]^{\top}$. 
-
-Note, the computation of the pixel $y=[u,v]^{\top}$ is sub-pixel accurate
-
-\begin{equation}
     \begin{split}
-        v &=  k + \dfrac{\alpha_k - \phi}{\alpha_k - \alpha_{k+1}} \\
-        u &= \left[W\left(1 - \frac{\theta - \delta_{\lfloor v \rceil}}{2\pi}\right)\right] \bmod W.
+        d_x &= x - n\cos\epsilon_c, \qquad d_y = y - n\sin\epsilon_c, \qquad \epsilon_c = 2\pi\left(1 - \frac{c}{W}\right), \\
+        \theta &= \operatorname{atan2}(d_y, d_x), \qquad \phi = \operatorname{atan2}\Big(z, \sqrt{d_x^2 + d_y^2}\Big), \\
+        \mathbf{y} &= f(\mathbf{p}; c) = \begin{bmatrix} u \\ v \end{bmatrix}, \qquad
+        v = k + \frac{\alpha_k - \phi}{\alpha_k - \alpha_{k+1}}, \qquad
+        u = \left[W\left(1 - \frac{\theta - \delta_{\lfloor v \rceil}}{2\pi}\right)\right] \bmod W.
     \end{split}
 \end{equation}
+\begin{itemize}
+    \item \textbf{Beam angles.} $(d_x, d_y)$ is the point relative to the beam origin at the encoder angle $\epsilon_c$ of column $c$, and $\theta$, $\phi$ are the azimuth and elevation of the beam that hits it.
+    \item \textbf{Row.} Each image row is one beam: row $k \in \{0, \ldots, H-1\}$ is beam $k$, with the calibrated altitude angle $\alpha_k$ = \texttt{beam\_altitude\_angles[k]}. The angles are in descending order (row $0$ is the top beam) and not evenly spaced. The elevation $\phi$ of the point generally lies between two beams, so $k$ is the integer row of the beam just above it, $\alpha_k \ge \phi > \alpha_{k+1}$, found by searching the table, and $v$ interpolates linearly from row $k$ to row $k+1$. For example, $\phi = 20.00^{\circ}$ lies between $\alpha_2 = 20.26^{\circ}$ and $\alpha_3 = 19.95^{\circ}$, so $k = 2$ and $v = 2 + (20.26 - 20.00)/(20.26 - 19.95) = 2.84$. Outside the field of view, the same formula with $k = 0$ or $k = H-2$ extrapolates.
+    \item \textbf{Column.} Beam $v$ points at $\theta = \epsilon_c - \beta_v$, and destaggering puts the pixel of measurement column $c$ at the image column $u = c + s_v$ (Section~\ref{sec:image_model}). Substituting $c = u - s_v$ gives the azimuth of pixel $(u, v)$,
+    \begin{equation}
+        \label{eq:destagger}
+        \theta = 2\pi\left(1 - \frac{u}{W}\right) + \delta_v, \qquad \delta_v = \frac{2\pi s_v}{W} - \beta_v,
+    \end{equation}
+    and solving for $u$ gives the last line of Equation~\eqref{eq:proj}. $\delta_v$ is a constant per row, computed directly from two calibration parameters in \texttt{meta.json}: the pixel shift $s_v$ = \texttt{pixel\_shift\_by\_row[v]} (in pixels) and the beam azimuth offset $\beta_v$ = \texttt{beam\_azimuth\_angles[v]} (converted from degrees to radians). It is evaluated at the nearest row $\lfloor v \rceil$, clipped to $[0, H-1]$.
+\end{itemize}
+Both $u$ and $v$ are continuous, so $\mathbf{y}$ is sub-pixel. By construction, $f\left(f^{-1}(\mathbf{z});\, c(\mathbf{y})\right) = \mathbf{y}$: re-projecting the driver's points with their own measurement column reproduces their pixels to below $10^{-4}$\,px. In the correspondences, $c$ is the column $c^{\star}$ found in Section~\ref{sec:fixed_point}, the same column that selects the sensor motion $\mathbf{T}^{B}_{c^{\star}}$.
+
 % this section is also not very useful. it is a verification. 
 % \textbf{How much the corrections matter.} Table~\ref{tab:proj_models} projects the driver's points of one scan, whose true pixels are known, with each model (\texttt{tests/compare\_projection\_models.py}). The measured beam altitudes are essential: assuming even spacing moves $61\%$ of the points to a wrong pixel. The other two corrections are sub-pixel and matter mainly below $2$\,m, where the beam origin offset shifts the azimuth by $\approx n \sin\beta_v / \rho$ (median $0.2$\,px at $1$\,m). We keep them so that the projection adds no error ($< 10^{-3}$\,px) to the ground-truth correspondences.
 % \begin{table}[h]
@@ -104,26 +76,6 @@ Note, the computation of the pixel $y=[u,v]^{\top}$ is sub-pixel accurate
 % \hline
 % \end{tabular}
 % \end{table}
-
-\begin{algorithm}[h]
-\caption{Lidar projection $f(\mathbf{p})$, Equation~\eqref{eq:proj} (\texttt{OusterModel.project})}
-\label{alg:proj}
-\begin{algorithmic}[1]
-\Function{$f$}{$\mathbf{p} = [x, y, z]^{\top}$} \Comment{$\mathbf{p}$ in the lidar frame at the firing time}
-    \State $\epsilon \gets \operatorname{atan2}(y, x)$ \Comment{initial encoder angle: ignore the beam origin offset}
-    \For{$4$ iterations}
-        \State $d_x \gets x - n\cos\epsilon, \quad d_y \gets y - n\sin\epsilon$ \Comment{point relative to the beam origin}
-        \State $\theta \gets \operatorname{atan2}(d_y, d_x)$ \Comment{beam azimuth}
-        \State $\phi \gets \operatorname{atan2}\left(z, \sqrt{d_x^2 + d_y^2}\right)$ \Comment{beam elevation}
-        \State $v \gets k + \dfrac{\alpha_k - \phi}{\alpha_k - \alpha_{k+1}}$ with $k$ such that $\alpha_k \ge \phi \ge \alpha_{k+1}$ \Comment{fractional row; same formula with $k = 0$ or $k = H-2$ outside the FOV}
-        \State $\bar{v} \gets \operatorname{clip}\left(\lfloor v \rceil, 0, H-1\right)$ \Comment{nearest beam}
-        \State $\epsilon \gets \theta + \beta_{\bar{v}}$ \Comment{encoder angle at which beam $\bar{v}$ points along $\theta$}
-    \EndFor
-    \State $u \gets \left[W\left(1 - \dfrac{\theta - \delta_{\bar{v}}}{2\pi}\right)\right] \bmod W$ \Comment{Equation~\eqref{eq:destagger} solved for $u$}
-    \State \Return $\mathbf{y} = [u, v]^{\top}$ \Comment{sub-pixel; integers are pixel centres}
-\EndFunction
-\end{algorithmic}
-\end{algorithm}
 
 % \subsubsection{Measurement column}
 % The function $c(\mathbf{y})$ of Equation~\eqref{eq:meas_col} maps a sub-pixel location to the firing that measured the nearest pixel, by undoing the destagger shift of that pixel's row (Algorithm~\ref{alg:meas_col}). The firing time then follows from the per-column time table $t_{B,c}$, and the sensor motion from $\mathbf{T}^{B}_{c}$. Together, $f$ and $c$ form one pass of Equation~\eqref{eq:iteration}: $f$ finds where scan $B$ sees the re-distorted point, and $c$ gives the firing whose transform is used in the next pass.
@@ -228,22 +180,23 @@ Pixel $i$ of $A$ is first moved into the stamp frame of $B$,
 Scan $B$ did not see $\mathbf{q}_i$ from $\mathcal{F}_{B}$, but from $\mathcal{F}_{B,c}$, where $c$ is the measurement column that fired towards the point. The predicted pixel in $B$ is
 \begin{equation}
     \label{eq:pred_pixel}
-    \boxed{\;\hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{T}_{BA}\,\mathbf{p}_i^{A}\right)\;}
+    \boxed{\;\hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{T}_{BA}\,\mathbf{p}_i^{A};\, c^{\star}\right)\;}
 \end{equation}
-Reading from right to left: apply the ICP-refined relative pose to the undistorted point of $A$ (from $\mathcal{F}_{A}$ to $\mathcal{F}_{B}$), re-distort it with the motion of $B$ (to $\mathcal{F}_{B,c^{\star}}$), and project into the raw image $B$.
+Reading from right to left: apply the ICP-refined relative pose to the undistorted point of $A$ (from $\mathcal{F}_{A}$ to $\mathcal{F}_{B}$), re-distort it with the motion of $B$ (to $\mathcal{F}_{B,c^{\star}}$), and project into the raw image $B$ as seen from column $c^{\star}$.
 
 To make the whole chain from the raw pixel of $A$ explicit, substituting Equation~\eqref{eq:mdist} gives
 \begin{equation}
     \label{eq:pred_pixel_full}
-    \hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{T}_{BA}\left(\mathbf{T}^{A}_{c_i}\right)^{-1} f^{-1}(\mathbf{z}_i)\right),
+    \hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{T}_{BA}\left(\mathbf{T}^{A}_{c_i}\right)^{-1} f^{-1}(\mathbf{z}_i);\, c^{\star}\right),
 \end{equation}
 i.e., back-project the pixel of $A$ (in $\mathcal{F}_{A,c_i}$) and undistort it with the motion of $A$ (to $\mathcal{F}_{A}$) before the steps above. \textbf{Note:} Equation~\eqref{eq:pred_pixel_full} only shows the relationship; the two right-most steps are never computed when building the pairs. Every pixel of the organized point cloud published by the driver (\texttt{/ouster/points}) already comes with its 3D point $\mathbf{p}_i^{A,c_i}$, so $f^{-1}$ is not evaluated at all. The odometry run undistorts these points once, with Equation~\eqref{eq:mdist}, and stores $\mathbf{p}_i^{A}$ for every pixel (\texttt{xyz\_undist}). The pixel correspondences therefore start from the stored pair $(\mathbf{z}_i, \mathbf{p}_i^{A})$ and evaluate only Equation~\eqref{eq:pred_pixel}: the relative pose, the re-distortion with the motion of $B$, and the projection $f$.
 
 \subsubsection{The circular dependency and the fixed point}
+\label{sec:fixed_point}
 Equation~\eqref{eq:pred_pixel} cannot be evaluated directly, because the predicted pixel and the measurement column depend on each other. The pixel depends on the column, through the sensor pose at the column's firing time; and the column depends on the pixel, through Equation~\eqref{eq:meas_col}:
 \begin{equation}
     \label{eq:fixed_point}
-    \hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{q}_i\right), \qquad
+    \hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{q}_i;\, c^{\star}\right), \qquad
     c^{\star} = c\left(\hat{\mathbf{y}}_j\right).
 \end{equation}
 Both have to hold at the same time. This is the physical condition that the sensor was at $\mathcal{F}_{B,c^{\star}}$ at the moment its beam swept across the point. Any other column is self-contradictory: re-distorting with $\mathbf{T}^{B}_{c}$ assumes the point was hit at $t_{B,c}$, but the pixel it lands on was measured by column $c(\hat{\mathbf{y}}_j) \ne c$, at a different time.
@@ -251,11 +204,11 @@ Both have to hold at the same time. This is the physical condition that the sens
 We solve Equation~\eqref{eq:fixed_point} by alternating between the two relations,
 \begin{equation}
     \label{eq:iteration}
-    \hat{\mathbf{y}}^{(k)} = f\left(\mathbf{T}^{B}_{c^{(k)}}\,\mathbf{q}_i\right), \qquad
+    \hat{\mathbf{y}}^{(k)} = f\left(\mathbf{T}^{B}_{c^{(k)}}\,\mathbf{q}_i;\, c^{(k)}\right), \qquad
     c^{(k+1)} = c\left(\hat{\mathbf{y}}^{(k)}\right), \qquad
-    c^{(0)} = c\left(f(\mathbf{q}_i)\right),
+    c^{(0)} = \left\lfloor W\left(1 - \frac{\operatorname{atan2}(q_{i,y},\, q_{i,x})}{2\pi}\right)\right\rceil \bmod W,
 \end{equation}
-i.e., the initial column is the one $\mathbf{q}_i$ projects to without any motion. Two details matter. First, every pass re-distorts the original $\mathbf{q}_i$, never the point of the previous pass, because $\mathbf{T}^{B}_{c}$ only applies to points in $\mathcal{F}_{B}$. Second, the projected pixel gives an image column $\hat{u}$, which Equation~\eqref{eq:meas_col} converts to a measurement column (using the row $\hat{v}$) before its firing time can be used.
+i.e., the initial column is the one whose encoder angle points at $\mathbf{q}_i$. It ignores the motion and the beam azimuth offsets $\beta_v$, so it is within about $12$ columns of the answer. Two details matter. First, every pass re-distorts the original $\mathbf{q}_i$, never the point of the previous pass, because $\mathbf{T}^{B}_{c}$ only applies to points in $\mathcal{F}_{B}$. Second, the projected pixel gives an image column $\hat{u}$, which Equation~\eqref{eq:meas_col} converts to a measurement column (using the row $\hat{v}$) before its firing time can be used.
 
 % \textcolor{blue}{\textbf{Note:} the iteration is a strong contraction. A column error $\delta c$ is a time error $\delta t = \delta c\, T_{\mathrm{scan}}/W$, which moves the predicted azimuth by about $(|\omega_z| + v_{\perp}/\rho)\,\delta t$, where $\omega_z$ is the yaw rate, $v_{\perp}$ the speed perpendicular to the beam, and $\rho$ the range. In columns, this is
 % \begin{equation}
@@ -264,7 +217,7 @@ i.e., the initial column is the one $\mathbf{q}_i$ projects to without any motio
 % \end{equation}
 % At $2$\,m/s, $0.7$\,rad/s and $\rho = 10$\,m, $\kappa \approx 0.014$: an initial error of a few columns drops to a few hundredths of a pixel after one pass and to about $10^{-3}$\,px after two. We run five passes as a safety margin.}
 
-After the last pass, the final projection gives the sub-pixel match $\hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{q}_i\right)$ and the predicted range $\hat{\rho}_j = \left\|\mathbf{T}^{B}_{c^{\star}}\,\mathbf{q}_i\right\|$. The transform $\mathbf{T}^{B}_{c}$ is constant within a measurement column, so $\hat{\mathbf{y}}_j$ is piecewise continuous in $c$, with steps of about $10^{-3}$\,px between neighbouring columns ($T_{\mathrm{scan}}/W \approx 98\,\mu$s apart).
+After the last pass, the final projection gives the sub-pixel match $\hat{\mathbf{y}}_j = f\left(\mathbf{T}^{B}_{c^{\star}}\,\mathbf{q}_i;\, c^{\star}\right)$ and the predicted range $\hat{\rho}_j = \left\|\mathbf{T}^{B}_{c^{\star}}\,\mathbf{q}_i\right\|$. The transform $\mathbf{T}^{B}_{c}$ is constant within a measurement column, so $\hat{\mathbf{y}}_j$ is piecewise continuous in $c$, with steps of about $10^{-3}$\,px between neighbouring columns ($T_{\mathrm{scan}}/W \approx 98\,\mu$s apart).
 
 \textbf{Convergence test.} A point on a pixel border may alternate between two rows, whose measurement columns differ by up to the shift spread $\max_v s_v - \min_v s_v = 24$ columns (about $2.4$\,ms). We therefore accept the iteration as converged if
 \begin{equation}
@@ -290,11 +243,11 @@ Whether the band is an overlap or a gap depends on whether the platform rotates 
 \begin{algorithmic}[1]
 \For{each valid pixel $i$ of $A$ with $\rho_i > \rho_{\min}$}
     \State $\mathbf{q}_i \gets \mathbf{T}_{BA}\,\mathbf{p}_i^{A}$
-    \State $c^{(0)} \gets c(f(\mathbf{q}_i))$
+    \State $c^{(0)} \gets$ column whose encoder angle points at $\mathbf{q}_i$
     \For{$k = 0, \ldots, K-1$}
-        \State $c^{(k+1)} \gets c\left(f(\mathbf{T}^{B}_{c^{(k)}}\,\mathbf{q}_i)\right)$ \Comment{re-distort $\mathbf{q}_i$, never the previous point}
+        \State $c^{(k+1)} \gets c\left(f(\mathbf{T}^{B}_{c^{(k)}}\,\mathbf{q}_i;\, c^{(k)})\right)$ \Comment{re-distort $\mathbf{q}_i$, never the previous point}
     \EndFor
-    \State $\hat{\mathbf{y}}_j \gets f(\mathbf{T}^{B}_{c^{(K)}}\,\mathbf{q}_i)$, \quad $\hat{\rho}_j \gets \|\mathbf{T}^{B}_{c^{(K)}}\,\mathbf{q}_i\|$
+    \State $\hat{\mathbf{y}}_j \gets f(\mathbf{T}^{B}_{c^{(K)}}\,\mathbf{q}_i;\, c^{(K)})$, \quad $\hat{\rho}_j \gets \|\mathbf{T}^{B}_{c^{(K)}}\,\mathbf{q}_i\|$
     \If{$c^{(0)}$ is within $m$ columns of the seam}
         \State repeat from the other end of the scan and keep the candidate with the smaller range residual
     \EndIf
@@ -340,7 +293,7 @@ $\mathbf{T}(t)$ & \texttt{T\_s\_m} \\
 $\mathbf{T}^{A}_{c}$, $\mathbf{T}^{B}_{c}$ & \texttt{col\_T\_sc\_s[c]} \\
 $\check{\mathbf{T}}_{BA}^{-1}$, $\mathbf{T}_{BA}^{-1}$ & \texttt{T\_AB\_odom}, \texttt{T\_AB} \\
 $c(\mathbf{y})$ & \texttt{OusterModel.meas\_col} \\
-$f(\cdot)$ & \texttt{OusterModel.project} \\
+$f(\cdot\,; c)$ & \texttt{OusterModel.project} \\
 Equation~\eqref{eq:mdist}, re-distortion & \texttt{mdist}, \texttt{re\_mdist} \\
 Equation~\eqref{eq:iteration} & \texttt{predict\_in\_dst} \\
 $K$, $m$, $\rho_{\min}$ & \texttt{re\_mdist\_iters}, \texttt{seam\_margin}, \texttt{corr\_min\_range} \\

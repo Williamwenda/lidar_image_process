@@ -100,7 +100,8 @@ make_pairs.py
 
 - `trajectory.csv`: one row per frame (stamp, position, speed, yaw rate, health).
 - `meta.json`: Ouster metadata, `T_s_r`, and the parameters used.
-- `vis/`: figures and `.ply` files from `visualize_odometry.py`.
+- `vis/`: figures and `.ply` files from `visualize_odometry.py`, and `inspect_<A>_<B>.png` when the `s` key
+  is pressed in `visualize_pairs.py`.
 
 ### `outputs/<FOLDER_NAME>/pairs/` (from `make_pairs.py`)
 
@@ -108,9 +109,6 @@ make_pairs.py
   - `corr_AB` (H, W, 2): (row, col) in B for every pixel of A, NaN = no match. `corr_BA` is the reverse.
   - `corr_range_AB/BA`: range of the matched point [m], useful to filter or weight matches.
   - `T_AB` (refined), `T_AB_odom`, stamps, ICP fitness / rmse.
-- `vis/inspect_<A>_<B>.png` (inspector, `s` saves the current view) and `vis/match3d_<A>_<B>.ply`: from `visualize_pairs.py`.
-- `vis/<A>_<B>.png`: overlay check. Top: A in yellow, B warped into A in blue, so aligned
-  structure looks gray. Bottom: A over raw B.
 
 Columns wrap around 360°: `col` is in [0, W), and a value in (W-1, W) lies between the last and the
 first column. With `rotate180=True` (default), images and correspondences are rotated for the
@@ -128,9 +126,9 @@ upside-down mount on the Warthog.
   and all pixels of a measurement column share one firing time.
 - **mdist / re_mdist.** `mdist`: `p_s = inv(col_T_sc_s[c]) @ p_measured`. `re_mdist`: `p_measured = col_T_sc_s[c] @ p_s`.
 - **Correspondence A → B.** Undistorted A point → B's stamp frame (`inv(T_AB)`) → `re_mdist` with
-  B's column motion → project with the Ouster model. The column depends on where the point lands,
-  so this is iterated, starting from the column the point projects to without motion. Near the
-  azimuth seam (`seam_margin` columns) it is also iterated from the other end of the scan, since a
+  B's column motion → project with the Ouster model, whose beam origin sits at that column's encoder
+  angle. The column depends on where the point lands, so this is iterated, starting from the column
+  whose encoder angle points at the point. Near the azimuth seam (`seam_margin` columns) it is also iterated from the other end of the scan, since a
   point can be seen at the start or at the end; points whose column does not converge (the gap
   between the end and the start of the sweep) are dropped. A match is kept if B has a return there with a matching range
   (occlusion check), the B → A match comes back within 1 px, and the point is beyond

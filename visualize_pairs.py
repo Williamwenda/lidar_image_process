@@ -14,41 +14,34 @@ Correspondence inspector (2-D):
   * For a pixel without a correspondence, the matching is recomputed for that pixel to tell why
     (too close, seam gap, outside the FOV, no return, occluded / range check, cycle check); where
     the point was predicted to land, it is drawn as a red o with a dashed line.
-  * Keys: c = clear the lines, s = save the figure.
-  * Matches listed in PIXELS_A (and NUM_RANDOM random ones) are drawn at the start and printed, so
-    the script is also useful without clicking (SHOW = False only saves the figure).
-  -> <OUT_DIR>/inspect_<A>_<B>.png
+  * Keys: c = clear the lines, s = save the figure to <OUT_DIR>/inspect_<A>_<B>.png (nothing is
+    saved otherwise).
+  * Matches listed in PIXELS_A (and NUM_RANDOM random ones) are drawn at the start and printed.
 
 3-D view (PLOT_3D):
   The two point clouds, z up, with B shifted by B_OFFSET so the two sit side by side. B is either
   aligned to A with T_AB, or left in its own frame (ALIGN_B). Points with a correspondence are dark
-  gray, points without one are light gray.
-  -> Open3D window + <OUT_DIR>/match3d_<A>_<B>.ply
+  gray, points without one are light gray (Open3D window).
 
 Run:  python visualize_pairs.py      (edit the parameters below)
 """
 import json
-import os
 import textwrap
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
+from matplotlib.patches import ConnectionPatch
 
 import config
 import make_pairs
 
-# cv2 (imported by make_pairs) points Qt to its own plugins, which breaks matplotlib's Qt backend
-os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH", None)
-import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.patches import ConnectionPatch  # noqa: E402
-
 ######## Parameters (edit by hand) ########
 ODOMETRY_DIR = config.ODOMETRY_DIR   # folder set in config.py
-OUT_DIR = config.PAIRS_DIR / "vis"
+OUT_DIR = config.ODOMETRY_DIR / "vis"   # where the s key saves the inspector figure
 FRAME_A = 530           # frame indices (rows of trajectory.csv); any two frames
-FRAME_B = 540
-SHOW = True              # open windows (False: only save the files)
+FRAME_B = 532
 PLOT_2D = True           # correspondence inspector
 PLOT_3D = False          # Open3D window (blocks until closed, then the inspector opens)
 # matching parameters (ICP, thresholds, ...) are taken from make_pairs.cfg
@@ -93,10 +86,7 @@ def plot_3d(fa, fb, pair, name):
 
     pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(points))
     pcd.colors = o3d.utility.Vector3dVector(colors)
-    o3d.io.write_point_cloud(str(Path(OUT_DIR) / f"match3d_{name}.ply"), pcd)
-
-    if SHOW:
-        o3d.visualization.draw_geometries([pcd], window_name=f"frames {name}: dark = matched, light = not matched")
+    o3d.visualization.draw_geometries([pcd], window_name=f"frames {name}: dark = matched, light = not matched")
 
 
 # ---------------- correspondence inspector ----------------
@@ -318,6 +308,7 @@ class Inspector:
             self.save()
 
     def save(self):
+        self.out_path.parent.mkdir(parents=True, exist_ok=True)
         self.fig.savefig(self.out_path, dpi=100)
         print(f"inspector figure -> {self.out_path}")
 
@@ -334,12 +325,10 @@ def plot_2d(fa, fb, pair, model, name, message):
         pixels += list(zip(rows[pick], cols[pick]))
     for row, col in pixels:
         inspector.inspect("A", row, col)
-    inspector.save()
     return inspector
 
 
 def main():
-    Path(OUT_DIR).mkdir(parents=True, exist_ok=True)
     files = make_pairs.list_frames(ODOMETRY_DIR)
     model = make_pairs.load_model(ODOMETRY_DIR)
     fa = make_pairs.load_frame(files[FRAME_A])
@@ -356,8 +345,7 @@ def main():
         plot_3d(fa, fb, pair, name)
     if PLOT_2D:
         inspector = plot_2d(fa, fb, pair, model, name, message)  # keep a reference: the callbacks live on it
-        if SHOW:
-            plt.show()
+        plt.show()
         del inspector
 
 

@@ -40,7 +40,8 @@ def main(odometry_dir=ODOMETRY_DIR):
         err = pixel_error(corr[rows, cols, 0], corr[rows, cols, 1], rows, cols, model.W)
         matched = np.isfinite(err).mean()
 
-        naive_row, naive_col = model.project(frame["xyz_undist"][use].astype(np.float64))
+        naive_row, naive_col = model.project(frame["xyz_undist"][use].astype(np.float64),
+                                              model.meas_col_of_pixel[rows, cols])
         naive_err = pixel_error(naive_row, naive_col, rows, cols, model.W)
 
         yaw_rate = np.abs(frame["col_w_s"][:, 5]).max()
